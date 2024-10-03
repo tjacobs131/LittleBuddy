@@ -1,5 +1,4 @@
 #include <SPI.h>
-#include <LoRa.h>
 #include <Wire.h>
 #include <U8g2lib.h>  // OLED library
 #include <lmic.h>
@@ -8,16 +7,13 @@
 // Initialize the OLED display using the U8g2 library
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
-// Define LoRa parameters
-int SyncWord = 0x22;
-
 // Define sendjob
 static osjob_t sendjob;
 
-// Replace with your LoRaWAN credentials in LSB format
-static const u1_t PROGMEM APPEUI[8] = { 0xB3, 0x7E, 0x48, 0xD6, 0x20, 0x62, 0xD5, 0x7A };
-static const u1_t PROGMEM DEVEUI[8] = { 0x27, 0xA8, 0x06, 0xD0, 0x7E, 0xD5, 0xB3, 0x70 };
-static const u1_t PROGMEM APPKEY[16] = { 0x95, 0xC1, 0xA2, 0x99, 0x07, 0xCB, 0x25, 0xB4, 0xF6, 0xFF, 0x71, 0xCD, 0x36, 0x3D, 0xDB, 0x6E };
+// ABP credentials
+u1_t NWKSKEY[16] = { 0x1E, 0x85, 0x3C, 0xA9, 0x38, 0xD4, 0xAA, 0xBA, 0xC6, 0x64, 0xE5, 0xAF, 0x29, 0xA0, 0xFA, 0xEA };
+u1_t APPSKEY[16] = { 0xCA, 0x70, 0x46, 0xCF, 0x56, 0x44, 0x8E, 0x3E, 0xA7, 0xF9, 0xFF, 0x5A, 0x33, 0x51, 0xF9, 0xBC };
+u4_t DEVADDR = 0x260B008F;  // Device address in big endian format
 
 // Pin mapping for TTGO LoRa32 (v1.6.1)
 const lmic_pinmap lmic_pins = {
@@ -26,6 +22,19 @@ const lmic_pinmap lmic_pins = {
     .rst = 23,
     .dio = {26, 33, 32}
 };
+
+// Empty OTAA-related functions (required by MCCI LMIC library even in ABP mode)
+void os_getArtEui(u1_t* buf) {
+    // Empty stub
+}
+
+void os_getDevEui(u1_t* buf) {
+    // Empty stub
+}
+
+void os_getDevKey(u1_t* buf) {
+    // Empty stub
+}
 
 void do_send(osjob_t* j) {
     if (LMIC.opmode & OP_TXRXPEND) {
@@ -36,30 +45,13 @@ void do_send(osjob_t* j) {
     } else {
         // Example payload: temperature and humidity
         uint8_t payload[2];
-        payload[0] = 25;  // Temperature value (example: 25°C)
-        payload[1] = 65;  // Humidity value (example: 65%)
-        
-        // Send the payload (port 1, unconfirmed uplink)
+        payload[0] = 25;  // Example temperature value
+        payload[1] = 65;  // Example humidity value
+
+        // Send the payload
         LMIC_setTxData2(1, payload, sizeof(payload), 0);
         Serial.println(F("Packet queued"));
-
-        // Display the sent packet on the OLED
-        u8g2.clearBuffer();
-        u8g2.drawStr(0, 10, "Packet queued");
-        u8g2.sendBuffer();
     }
-}
-
-void os_getArtEui (u1_t* buf) {
-    memcpy_P(buf, APPEUI, 8);
-}
-
-void os_getDevEui (u1_t* buf) {
-    memcpy_P(buf, DEVEUI, 8);
-}
-
-void os_getDevKey (u1_t* buf) {
-    memcpy_P(buf, APPKEY, 16);
 }
 
 // LMIC event handler
@@ -67,41 +59,7 @@ void onEvent(ev_t ev) {
     Serial.print(os_getTime());
     Serial.print(": ");
     u8g2.clearBuffer();
-    switch (ev) {
-        case EV_SCAN_TIMEOUT:
-            Serial.println(F("EV_SCAN_TIMEOUT"));
-            u8g2.drawStr(0, 10, "Scan Timeout");
-            break;
-        case EV_BEACON_FOUND:
-            Serial.println(F("EV_BEACON_FOUND"));
-            u8g2.drawStr(0, 10, "Beacon Found");
-            break;
-        case EV_BEACON_MISSED:
-            Serial.println(F("EV_BEACON_MISSED"));
-            u8g2.drawStr(0, 10, "Beacon Missed");
-            break;
-        case EV_BEACON_TRACKED:
-            Serial.println(F("EV_BEACON_TRACKED"));
-            u8g2.drawStr(0, 10, "Beacon Tracked");
-            break;
-        case EV_JOINING:
-            Serial.println(F("EV_JOINING"));
-            u8g2.drawStr(0, 10, "Joining Network...");
-            break;
-        case EV_JOINED:
-            Serial.println(F("EV_JOINED"));
-            u8g2.drawStr(0, 10, "Joined Network");
-            // Disable link check validation (automatically enabled after joining)
-            LMIC_setLinkCheckMode(0);
-            break;
-        case EV_JOIN_FAILED:
-            Serial.println(F("EV_JOIN_FAILED"));
-            u8g2.drawStr(0, 10, "Join Failed");
-            break;
-        case EV_REJOIN_FAILED:
-            Serial.println(F("EV_REJOIN_FAILED"));
-            u8g2.drawStr(0, 10, "Rejoin Failed");
-            break;
+    switch(ev) {
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE"));
             if (LMIC.txrxFlags & TXRX_ACK) {
@@ -111,47 +69,20 @@ void onEvent(ev_t ev) {
                 u8g2.drawStr(0, 10, "TX Complete");
             }
             if (LMIC.dataLen) {
-                Serial.println(F("Received "));
-                Serial.println(LMIC.dataLen);
+                Serial.print(F("Received "));
+                Serial.print(LMIC.dataLen);
                 Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission
             os_setTimedCallback(&sendjob, os_getTime() + sec2osticks(60), do_send);
-            break;
-        case EV_LOST_TSYNC:
-            Serial.println(F("EV_LOST_TSYNC"));
-            u8g2.drawStr(0, 10, "Lost Sync");
-            break;
-        case EV_RESET:
-            Serial.println(F("EV_RESET"));
-            u8g2.drawStr(0, 10, "Reset");
-            break;
-        case EV_RXCOMPLETE:
-            Serial.println(F("EV_RXCOMPLETE"));
-            u8g2.drawStr(0, 10, "RX Complete");
-            break;
-        case EV_LINK_DEAD:
-            Serial.println(F("EV_LINK_DEAD"));
-            u8g2.drawStr(0, 10, "Link Dead");
-            break;
-        case EV_LINK_ALIVE:
-            Serial.println(F("EV_LINK_ALIVE"));
-            u8g2.drawStr(0, 10, "Link Alive");
             break;
         case EV_TXSTART:
             Serial.println(F("EV_TXSTART"));
             u8g2.drawStr(0, 10, "TX Started");
             break;
         default:
-            if (ev == 20) {
-                Serial.println(F("EV_JOIN_FAILED"));
-                u8g2.drawStr(0, 10, "EV_JOIN_FAILED");
-            } else {
-                Serial.print(F("Unknown event: "));
-                u8g2.drawStr(0, 10, "Unkown event:");
-                u8g2.setCursor(0, 30);  // Move the cursor down to print the event number
-                u8g2.print((unsigned) ev);  // Print the event number
-            }
+            Serial.print(F("Unknown event: "));
+            Serial.println((unsigned)ev);
             break;
     }
     u8g2.sendBuffer();
@@ -159,7 +90,7 @@ void onEvent(ev_t ev) {
 
 void setup() {
     Serial.begin(115200);
-  
+
     // Initialize the OLED
     u8g2.begin();
     u8g2.clearBuffer();
@@ -172,14 +103,16 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
-    // Start joining the network (OTAA)
-    LMIC_startJoining();
+    // Set static session parameters for ABP
+    LMIC_setSession(0x13, DEVADDR, NWKSKEY, APPSKEY);
+
+    // Disable link check validation (automatically enabled in OTAA mode)
+    LMIC_setLinkCheckMode(0);
 
     // Set data rate and transmit power (note: txpow seems to be ignored by the library)
     LMIC_setDrTxpow(DR_SF7, 14);
-    LMIC_selectSubBand(1);  // Select sub-band if your gateway operates on specific frequencies
 
-    // Start job (sending automatically after startup)
+    // Schedule the first transmission
     do_send(&sendjob);
 }
 
