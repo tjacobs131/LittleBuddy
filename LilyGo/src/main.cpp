@@ -176,7 +176,8 @@ void setup() {
     LMIC_startJoining();
 
     // Set data rate and transmit power (note: txpow seems to be ignored by the library)
-    LMIC_setDrTxpow(DR_SF10, 14);  // Use SF12 for better range
+    LMIC_setDrTxpow(DR_SF7, 14);
+    LMIC_selectSubBand(1);  // Select sub-band if your gateway operates on specific frequencies
 
     // Start job (sending automatically after startup)
     do_send(&sendjob);
