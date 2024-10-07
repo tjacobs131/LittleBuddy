@@ -1,14 +1,29 @@
-#include <SPI.h>
-#include <LoRa.h>
+#include "AGS02MA_Sensor.h"
+
+AGS02MA_Sensor tvocSensor;
 
 void setup() {
-  Serial.begin(9600);
-  LoRa.begin(868E6); // Set the frequency (e.g., 868 MHz for Europe)
+    Serial.begin(115200);
+
+    if (!tvocSensor.begin()) {
+        Serial.println("Failed to initialize AGS02MA sensor!");
+        while (1);
+    }
+    Serial.println("AGS02MA sensor initialized.");
 }
 
 void loop() {
-  LoRa.beginPacket();
-  LoRa.print("Mock data from TTGO");
-  LoRa.endPacket();
-  delay(5000); // Send data every 5 seconds
+    float ppb = tvocSensor.readPPB();
+    Serial.print("TVOC in PPB: ");
+    Serial.println(ppb);
+
+    float ugm3_SO2 = tvocSensor.getUGM3ForGas("SO2");
+    Serial.print("SO2 in μg/m³: ");
+    Serial.println(ugm3_SO2);
+
+    float ugm3_CO = tvocSensor.getUGM3ForGas("CO");
+    Serial.print("CO in μg/m³: ");
+    Serial.println(ugm3_CO);
+
+    delay(3000);
 }
