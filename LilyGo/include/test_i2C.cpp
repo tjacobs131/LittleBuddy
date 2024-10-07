@@ -1,5 +1,4 @@
 #include <Wire.h>
-#include <Arduino.h>
 
 void setup() {
   Wire.begin(19, 23);  // Initialize I2C with custom pins (SDA: GPIO 19, SCL: GPIO 23)
