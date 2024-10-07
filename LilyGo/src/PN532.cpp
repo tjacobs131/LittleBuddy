@@ -1,13 +1,16 @@
 #include "PN532.h"
+#include <Adafruit_PN532.h>
+#include <SPI.h>
 
-PN532::PN532(uint8_t irqPin, uint8_t resetPin) 
-  : nfc(irqPin, resetPin), _irqPin(irqPin), _resetPin(resetPin) {}
+// Constructor: Use software SPI with custom pin mapping
+PN532::PN532() : nfc(25, 2, 4, 0) {  // SS: GPIO 25, SCK: GPIO 2, MOSI: GPIO 4, MISO: GPIO 0
+}
 
 bool PN532::begin() {
     nfc.begin();  // Initialize the Adafruit PN532 library
     uint32_t versiondata = nfc.getFirmwareVersion();
     if (!versiondata) {
-        return false; // No response from the PN532, initialization failed
+        return false;  // No response from the PN532, initialization failed
     }
     nfc.SAMConfig();  // Configure the PN532 to read RFID cards
     return true;
