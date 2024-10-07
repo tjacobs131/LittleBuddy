@@ -11,7 +11,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 static osjob_t sendjob;
 
 // ABP credentials
-u1_t NWKSKEY[16] = { 0x1E, 0x85, 0x3C, 0xA9, 0x38, 0xD4, 0xAA, 0xBA, 0xC6, 0x64, 0xE5, 0xAF, 0x29, 0xA0, 0xFA, 0xEA };
+u1_t NWKSKEY[16] = { 0x5E, 0xF0, 0xFD, 0x29, 0xB6, 0xA7, 0x0D, 0x0F, 0xF6, 0xDF, 0x99, 0xB2, 0x68, 0x51, 0xEA, 0x6C };
 u1_t APPSKEY[16] = { 0xCA, 0x70, 0x46, 0xCF, 0x56, 0x44, 0x8E, 0x3E, 0xA7, 0xF9, 0xFF, 0x5A, 0x33, 0x51, 0xF9, 0xBC };
 u4_t DEVADDR = 0x260B008F;  // Device address in big endian format
 
@@ -20,7 +20,7 @@ const lmic_pinmap lmic_pins = {
     .nss = 18,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 23,
-    .dio = {26, 33, 32}
+    .dio = {26, 32, 33}
 };
 
 // Empty OTAA-related functions (required by MCCI LMIC library even in ABP mode)
@@ -107,10 +107,10 @@ void setup() {
     LMIC_setSession(0x13, DEVADDR, NWKSKEY, APPSKEY);
 
     // Disable link check validation (automatically enabled in OTAA mode)
-    LMIC_setLinkCheckMode(0);
-
+    // LMIC_setLinkCheckMode(0);
+    LMIC.dn2Dr = DR_SF9;
     // Set data rate and transmit power (note: txpow seems to be ignored by the library)
-    LMIC_setDrTxpow(DR_SF7, 14);
+    LMIC_setDrTxpow(DR_SF9, 14);
 
     // Schedule the first transmission
     do_send(&sendjob);
