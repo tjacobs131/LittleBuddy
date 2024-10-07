@@ -1,3 +1,18 @@
+
+// To make this work go to:
+// .pio/libdeps/ttgo-lora32-v1/MCCI LoRaWAN LMIC library/project_config/lmic_project_config.h
+// change the content to:
+// // project-specific definitions
+// #define CFG_eu868 1
+// //#define CFG_us915 1
+// //#define CFG_au915 1
+// //#define CFG_as923 1
+// // #define LMIC_COUNTRY_CODE LMIC_COUNTRY_CODE_JP      /* for as923-JP; also define CFG_as923 */
+// //#define CFG_kr920 1
+// //#define CFG_in866 1
+// #define CFG_sx1276_radio 1
+// //#define LMIC_USE_INTERRUPTS
+
 #include <SPI.h>
 #include <Wire.h>
 #include <U8g2lib.h>  // OLED library
@@ -102,6 +117,8 @@ void setup() {
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
+    LMIC_setAdrMode(0); // Disable ADR
+    LMIC_setLinkCheckMode(0); // Disable link check
 
     // Set static session parameters for ABP
     LMIC_setSession(0x13, DEVADDR, NWKSKEY, APPSKEY);
