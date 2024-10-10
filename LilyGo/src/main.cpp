@@ -1,17 +1,26 @@
-
-// To make this work go to:
-// .pio/libdeps/ttgo-lora32-v1/MCCI LoRaWAN LMIC library/project_config/lmic_project_config.h
-// change the content to:
-// // project-specific definitions
-// #define CFG_eu868 1
-// //#define CFG_us915 1
-// //#define CFG_au915 1
-// //#define CFG_as923 1
-// // #define LMIC_COUNTRY_CODE LMIC_COUNTRY_CODE_JP      /* for as923-JP; also define CFG_as923 */
-// //#define CFG_kr920 1
-// //#define CFG_in866 1
-// #define CFG_sx1276_radio 1
-// //#define LMIC_USE_INTERRUPTS
+/*
+  To make this work, follow these steps:
+ 
+  1. Go to:
+     .pio/libdeps/ttgo-lora32-v1/MCCI LoRaWAN LMIC library/project_config/lmic_project_config.h
+     and change the content to:
+ 
+     // project-specific definitions
+     #define CFG_eu868 1 # Uncomment this
+     //#define CFG_us915 1
+     //#define CFG_au915 1
+     //#define CFG_as923 1
+     //#define LMIC_COUNTRY_CODE LMIC_COUNTRY_CODE_JP
+     //#define CFG_kr920 1
+     //#define CFG_in866 1
+     #define CFG_sx1276_radio 1
+     //#define LMIC_USE_INTERRUPTS
+/*
+2. Then, inside the file:
+     .pio/libdeps/ttgo-lora32-v1/MCCI LoRaWAN LMIC library/src/hal/hal.cpp
+     change the name of the function `hal_init` to `hal_init_LMIC`.
+*/
+  
 
 #include <SPI.h>
 #include <Wire.h>
