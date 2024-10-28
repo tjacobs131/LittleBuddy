@@ -42,3 +42,13 @@ LilyGo/include/secrets.h
 # C#
 Server/bin/
 Server/obj/
+
+# Visual Studio cache files
+.vs/
+
+# User-specific files
+*.user
+*.suo
+
+# Auto-generated AssemblyInfo files
+**/Properties/AssemblyInfo.cs
