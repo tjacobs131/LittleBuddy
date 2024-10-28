@@ -38,3 +38,7 @@ google-services.json
 .vscode/launch.json
 .vscode/ipch
 LilyGo/include/secrets.h
+
+# C#
+Server/bin/
+Server/obj/
