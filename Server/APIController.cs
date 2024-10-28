@@ -6,11 +6,18 @@ namespace TTNMqttWebApi.Controllers
     [Route("api/test")]
     public class BudController : ControllerBase
     {
+        private readonly MessageStore _messageStore;
+
+        public BudController(MessageStore messageStore)
+        {
+            _messageStore = messageStore;
+        }
+
         [HttpGet]
         public IActionResult Get()
         {
-            // Return some data or status
-            return Ok("Peenuts");
+            var latestPayload = _messageStore.GetLatestPayload();
+            return Ok(latestPayload ?? "No data received yet");
         }
     }
 }

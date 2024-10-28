@@ -12,6 +12,7 @@ namespace TTNMqttWebApi.Services
     public class MqttClientService : BackgroundService
     {
         private readonly IConfiguration _configuration;
+        private readonly MessageStore _messageStore;
         private readonly string brokerAddress;
         private readonly string appId;
         private readonly string apiKey;
@@ -19,8 +20,9 @@ namespace TTNMqttWebApi.Services
         private IMqttClient mqttClient;
         private MqttClientOptions options; // Updated type
 
-        public MqttClientService(IConfiguration configuration)
+        public MqttClientService(IConfiguration configuration, MessageStore messageStore)
         {
+            _messageStore = messageStore;
             _configuration = configuration;
             // Read settings from configuration
             brokerAddress = _configuration["TTN:BrokerAddress"];
@@ -45,9 +47,12 @@ namespace TTNMqttWebApi.Services
             // Handle incoming messages
             mqttClient.ApplicationMessageReceivedAsync += e =>
             {
+                var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+                _messageStore.UpdatePayload(payloadString);
+
                 Console.WriteLine("### RECEIVED APPLICATION MESSAGE ###");
                 Console.WriteLine($"+ Topic = {e.ApplicationMessage.Topic}");
-                Console.WriteLine($"+ Payload = {Encoding.UTF8.GetString(e.ApplicationMessage.Payload)}");
+                Console.WriteLine($"+ Payload = {payloadString}");
                 Console.WriteLine();
 
                 return Task.CompletedTask;
