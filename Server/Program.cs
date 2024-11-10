@@ -1,4 +1,9 @@
+﻿using System.Net.Security;
+using System.Net.Mime;
+using System;
 using TTNMqttWebApi.Services;
+using Microsoft.Extensions.DependencyInjection;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,10 +15,19 @@ builder.Services.AddHostedService<MqttClientService>();
 
 builder.Services.AddSingleton<MessageStore>();
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.MapHub<BuddyHub>("/BuddyHub");
 
 app.UseAuthorization();
 

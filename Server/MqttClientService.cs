@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using MQTTnet;
 using MQTTnet.Client;
 using System;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+
 
 namespace TTNMqttWebApi.Services
 {
@@ -16,6 +18,7 @@ namespace TTNMqttWebApi.Services
         private readonly string brokerAddress;
         private readonly string appId;
         private readonly string apiKey;
+        private readonly IHubContext<BuddyHub> _hubContext;
 
         private IMqttClient mqttClient;
         private MqttClientOptions options; // Updated type
@@ -29,6 +32,8 @@ namespace TTNMqttWebApi.Services
             appId = _configuration["TTN:AppId"];
             apiKey = _configuration["TTN:ApiKey"];
         }
+
+        internal IHubContext<BuddyHub> HubContext => _hubContext;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -54,7 +59,9 @@ namespace TTNMqttWebApi.Services
                 Console.WriteLine($"+ Topic = {e.ApplicationMessage.Topic}");
                 Console.WriteLine($"+ Payload = {payloadString}");
                 Console.WriteLine();
-
+                
+                HubContext.Clients.All.SendAsync("ReceiveMqttMessage", e.ApplicationMessage.Topic, payloadString );
+                
                 return Task.CompletedTask;
             };
 
@@ -100,5 +107,10 @@ namespace TTNMqttWebApi.Services
             // Keep the task running until cancellation is requested
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }
+    }
+
+    internal class BuddyHub : Hub
+    {
+        
     }
 }
