@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using TTNMqttWebApi.Services;
+
 
 
 namespace TTNMqttWebApi.Services
@@ -18,10 +20,10 @@ namespace TTNMqttWebApi.Services
         private readonly string brokerAddress;
         private readonly string appId;
         private readonly string apiKey;
-        private readonly IHubContext<BuddyHub> _hubContext;
+        private readonly IHubContext<BudHub> _hubContext;
 
         private IMqttClient mqttClient;
-        private MqttClientOptions options; // Updated type
+        private MqttClientOptions options; 
 
         public MqttClientService(IConfiguration configuration, MessageStore messageStore)
         {
@@ -33,7 +35,7 @@ namespace TTNMqttWebApi.Services
             apiKey = _configuration["TTN:ApiKey"];
         }
 
-        internal IHubContext<BuddyHub> HubContext => _hubContext;
+        internal IHubContext<BudHub> HubContext => _hubContext;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -109,8 +111,4 @@ namespace TTNMqttWebApi.Services
         }
     }
 
-    internal class BuddyHub : Hub
-    {
-        
-    }
 }

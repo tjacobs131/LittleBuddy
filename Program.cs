@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using MQTTnet;
 using MQTTnet.Client;
 
-namespace TTNMqttClient
-{
     class Program
     {
         static async Task Main(string[] args)
@@ -84,4 +82,3 @@ namespace TTNMqttClient
             await mqttClient.DisconnectAsync();
         }
     }
-}

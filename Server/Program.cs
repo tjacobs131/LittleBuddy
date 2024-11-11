@@ -3,6 +3,7 @@ using System.Net.Mime;
 using System;
 using TTNMqttWebApi.Services;
 using Microsoft.Extensions.DependencyInjection;
+using TTNMqttWebApi.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +28,8 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.MapHub<BuddyHub>("/BuddyHub");
+//app.MapHub<BuddyHub>("/BuddyHub");
+app.MapHub<BudHub>("/BudHub");
 
 app.UseAuthorization();
 
