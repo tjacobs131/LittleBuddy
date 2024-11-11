@@ -3,7 +3,7 @@ using System.Net.Mime;
 using System;
 using TTNMqttWebApi.Services;
 using Microsoft.Extensions.DependencyInjection;
-using TTNMqttWebApi.Services;
+using SignalR.Hubs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,7 +29,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 //app.MapHub<BuddyHub>("/BuddyHub");
-app.MapHub<BudHub>("/BudHub");
+app.MapHub<BudHub>("/BuddyHub");
 
 app.UseAuthorization();
 

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace TTNMqttWebApi.Services {
-public class BudHub : Hub
+namespace SignalR.Hubs {
+    public class BudHub : Hub
     {
         public async Task SendMessage(string user, string message)
         {

@@ -13,6 +13,8 @@
             .withUrl("/BuddyHub")
             .build();
 
+        print("Connected")
+
         connection.on("ReceiveMqttMessage", (topic, payload) => {
             const messagesDiv = document.getElementById("messages");
             const messageElement = document.createElement("div");
