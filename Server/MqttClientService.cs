@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using MQTTnet;
@@ -21,6 +22,7 @@ namespace TTNMqttWebApi.Services
         private readonly string appId;
         private readonly string apiKey;
         private readonly IHubContext<BudHub> _hubContext;
+        private string payload;
 
         private IMqttClient mqttClient;
         private MqttClientOptions options; 
@@ -35,7 +37,8 @@ namespace TTNMqttWebApi.Services
             apiKey = _configuration["TTN:ApiKey"];
         }
 
-        internal IHubContext<BudHub> HubContext => _hubContext;
+        //internal IHubContext<BudHub> HubContext => _hubContext;
+        private readonly IHubContext<BudHub> hubContext;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -60,12 +63,24 @@ namespace TTNMqttWebApi.Services
                 Console.WriteLine("### RECEIVED APPLICATION MESSAGE ###");
                 Console.WriteLine($"+ Topic = {e.ApplicationMessage.Topic}");
                 Console.WriteLine($"+ Payload = {payloadString}");
-                Console.WriteLine();
+                Console.WriteLine($"This is the type: {e.GetType()}");
                 
-                HubContext.Clients.All.SendAsync("ReceiveMqttMessage", e.ApplicationMessage.Topic, payloadString );
+                hubContext.Clients.All.SendAsync("ReceiveMqttMessage", payloadString );
+                payload = payloadString;
+
                 
                 return Task.CompletedTask;
             };
+            
+            async Task SendAsyncMessage()
+            {
+                
+                    
+                await hubContext.Clients.All.SendAsync("ReceiveNumber", payload);
+
+                    //await Task.Delay(1000);
+                
+            }
 
             // Handle connection
             mqttClient.ConnectedAsync += async e =>
