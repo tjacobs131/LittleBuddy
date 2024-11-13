@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "EXkJinthCN+Aj0+kTyJunIiZUWXT2sHhIWgBGVEsWoA=",
+  "Source": "NumberReader",
+  "BasePath": "_content/NumberReader",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "NumberReader\\wwwroot",
+      "Source": "NumberReader",
+      "ContentRoot": "C:\\Users\\james\\OneDrive\\Documents\\jamesprojects\\NumberReader\\NumberReader\\wwwroot\\",
+      "BasePath": "_content/NumberReader",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\james\\OneDrive\\Documents\\jamesprojects\\NumberReader\\NumberReader\\wwwroot\\js\\signalr\\dist\\browser\\signalr.js",
+      "SourceId": "NumberReader",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\james\\OneDrive\\Documents\\jamesprojects\\NumberReader\\NumberReader\\wwwroot\\",
+      "BasePath": "_content/NumberReader",
+      "RelativePath": "js/signalr/dist/browser/signalr.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\js\\signalr\\dist\\browser\\signalr.js"
+    }
+  ]
+}
