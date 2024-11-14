@@ -4,26 +4,31 @@
 PN532::PN532(uint8_t irq, uint8_t reset) : nfc(irq, reset) {}
 
 bool PN532::begin() {
-    // Initialize I2C communication; assuming default SDA and SCL pins are used
-    Wire.begin(21, 22);
+    Wire.begin(21, 22); // Initialize Wire library with specific SDA and SCL
 
-    // Initialize the PN532 using I2C with the IRQ and reset pins specified in the constructor
-    nfc.begin();
-
-    // Get the firmware version (for debugging purposes)
-    uint32_t versiondata = nfc.getFirmwareVersion();
-    if (!versiondata) {
-        Serial.println("Failed to detect PN532 firmware!");
+    // Initialize the PN532 using I2C without specifying the bus or address
+    if (!nfc.begin()) {
+        Serial.println("Failed to initialize PN532!");
         return false;  // Initialization failed
     }
 
+    // Get the firmware version for debugging purposes
+    uint32_t versiondata = nfc.getFirmwareVersion();
+    if (!versiondata) {
+        Serial.println("Failed to detect PN532 firmware!");
+        return false;
+    }
+
     // Print firmware details
-    Serial.print("Found chip PN5"); Serial.println((versiondata >> 24) & 0xFF, HEX);
-    Serial.print("Firmware version: "); Serial.print((versiondata >> 16) & 0xFF, DEC);
-    Serial.print('.'); Serial.println((versiondata >> 8) & 0xFF, DEC);
+    Serial.print("Found chip PN5");
+    Serial.println((versiondata >> 24) & 0xFF, HEX);
+    Serial.print("Firmware version: ");
+    Serial.print((versiondata >> 16) & 0xFF, DEC);
+    Serial.print('.');
+    Serial.println((versiondata >> 8) & 0xFF, DEC);
 
     // Configure the PN532 to read RFID tags
-    nfc.SAMConfig();  // Sets the module into a mode to detect passive RFID tags
+    nfc.SAMConfig();
     return true;
 }
 
