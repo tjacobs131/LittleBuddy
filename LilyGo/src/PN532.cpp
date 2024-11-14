@@ -1,33 +1,28 @@
 #include "PN532.h"
 
-// Constructor: Initializes the PN532 instance using the custom SPI pins
-PN532::PN532() : nfc(25, 2, 4, 12) {  // SS: GPIO 25, SCK: GPIO 2, MOSI: GPIO 4, MISO: GPIO 12
-}
+// Constructor: Initializes the PN532 instance using IRQ and reset pins
+PN532::PN532(uint8_t irq, uint8_t reset) : nfc(irq, reset) {}
 
 bool PN532::begin() {
-    // Initialize SPI communication and delay for module to stabilize
-    SPI.begin(2, 12, 4, 25);  // SCK: GPIO 2, MISO: GPIO 12, MOSI: GPIO 4, SS: GPIO 25
-    delay(1000);  // Allow some time for the module to initialize
+    // Initialize I2C communication; assuming default SDA and SCL pins are used
+    Wire.begin(21, 22);
 
-    // Initialize the PN532 using SPI
-    if (!nfc.begin()) {
-        Serial.println("Failed to initialize PN532 over SPI!");
-        return false;  // Initialization failed
-    }
+    // Initialize the PN532 using I2C with the IRQ and reset pins specified in the constructor
+    nfc.begin();
 
     // Get the firmware version (for debugging purposes)
     uint32_t versiondata = nfc.getFirmwareVersion();
     if (!versiondata) {
         Serial.println("Failed to detect PN532 firmware!");
-        return false;
+        return false;  // Initialization failed
     }
 
     // Print firmware details
-    Serial.print("Found PN5"); Serial.println((versiondata >> 24) & 0xFF, HEX);
+    Serial.print("Found chip PN5"); Serial.println((versiondata >> 24) & 0xFF, HEX);
     Serial.print("Firmware version: "); Serial.print((versiondata >> 16) & 0xFF, DEC);
     Serial.print('.'); Serial.println((versiondata >> 8) & 0xFF, DEC);
 
-    // Configure the PN532 to read RFID tags (MIFARE/ISO 14443A)
+    // Configure the PN532 to read RFID tags
     nfc.SAMConfig();  // Sets the module into a mode to detect passive RFID tags
     return true;
 }

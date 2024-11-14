@@ -1,44 +1,51 @@
-#include <Arduino.h>
 #include "PN532.h"
 
+// Define the IRQ and reset pins
+#define IRQ_PIN 2
+#define RESET_PIN 3
+
 // Create an instance of the PN532 class
-PN532 rfid;
+PN532 nfc(IRQ_PIN, RESET_PIN);
 
 void setup() {
-    Serial.begin(115200);
-    Serial.println("Starting PN532 NFC Module...");
+    Serial.begin(115200);  // Start the serial connection for debugging
+    Serial.println("Starting NFC reader...");
 
-    // Initialize the PN532 NFC module
-    if (!rfid.begin()) {
-        Serial.println("PN532 initialization failed!");
-        while (1);  // Stop if initialization fails
+    // Begin communication with the NFC module
+    if (!nfc.begin()) {
+        Serial.println("Failed to initialize the NFC reader!");
+        while (1);  // Halt indefinitely if unable to start communication
     }
-
-    Serial.println("PN532 initialized successfully.");
+    Serial.println("NFC reader initialized successfully.");
 }
 
 void loop() {
-    Serial.println("Waiting for an RFID tag...");
+    // Check for the presence of an RFID tag
+    if (nfc.requestTag()) {
+        Serial.println("RFID tag detected.");
 
-    // Check if an RFID tag is present
-    if (rfid.requestTag()) {
-        uint8_t uid[7];  // Buffer to store the UID
+        // Buffer to store the UID of the tag
+        uint8_t uidBuffer[7];
         uint8_t uidLength;
 
-        // Try to read the RFID card's UID
-        if (rfid.readCardUID(uid, uidLength)) {
-            Serial.print("Card UID: ");
+        // Attempt to read the UID from the RFID tag
+        if (nfc.readCardUID(uidBuffer, uidLength)) {
+            Serial.print("Read UID with length ");
+            Serial.print(uidLength);
+            Serial.print(": ");
+
+            // Print the UID in hex format
             for (uint8_t i = 0; i < uidLength; i++) {
-                Serial.print(uid[i], HEX);
-                Serial.print(" ");
+                Serial.print(uidBuffer[i] < 16 ? " 0" : " ");
+                Serial.print(uidBuffer[i], HEX);
             }
             Serial.println();
         } else {
-            Serial.println("Failed to read card UID!");
+            Serial.println("Failed to read UID.");
         }
     } else {
-        Serial.println("No RFID tag detected.");
+        Serial.println("No RFID tag in range.");
     }
 
-    delay(1000);  // Wait for 1 second before checking again
+    delay(1000);  // Wait a second before checking again
 }

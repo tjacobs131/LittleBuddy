@@ -3,11 +3,11 @@
 
 #include <Arduino.h>
 #include <Adafruit_PN532.h>
-#include <SPI.h>
+#include <Wire.h>  // Include Wire library for I2C
 
 class PN532 {
 public:
-    PN532();  // Constructor
+    PN532(uint8_t irq, uint8_t reset);  // Constructor with IRQ and reset
     bool begin();  // Initialize the PN532 sensor
     bool requestTag();  // Check for RFID tag presence
     bool readCardUID(uint8_t *uidBuffer, uint8_t &uidLength);  // Read card's UID
