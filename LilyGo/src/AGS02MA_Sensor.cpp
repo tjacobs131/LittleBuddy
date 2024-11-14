@@ -4,10 +4,10 @@ AGS02MA_Sensor::AGS02MA_Sensor() : ags02ma() {}  // Constructor
 
 bool AGS02MA_Sensor::begin() {
     // Initialize I2C with custom pins
-    Wire.begin(21, 22);  // SDA: GPIO 19, SCL: GPIO 23
+    Wire.begin(21, 22);  // SDA: GPIO 21, SCL: GPIO 22
 
     // Initialize the sensor using the custom I2C bus (Wire) and address 0x1A
-    return ags02ma.begin(&Wire, 0x1A);
+    return ags02ma.begin(&Wire, 0x1A); // Assuming this method exists and accepts these parameters
 }
 
 float AGS02MA_Sensor::readPPB() {
@@ -22,25 +22,19 @@ float AGS02MA_Sensor::calculateUGM3(float ppb, float molecularWeight, float temp
     return ppb * molecularWeight * 12.187 / (273.15 + temperatureC);  // Full formula considering temperature
 }
 
-float AGS02MA_Sensor::getUGM3ForGas(const String& gasName) {
+void AGS02MA_Sensor::printAllGasConcentrations() {
     float ppb = readPPB();
-    float molecularWeight = 0;
+    Serial.print("TVOC (PPB): ");
+    Serial.println(ppb);
 
-    if (gasName == "SO2") {
-        molecularWeight = 64;
-    } else if (gasName == "NO2") {
-        molecularWeight = 46;
-    } else if (gasName == "NO") {
-        molecularWeight = 30;
-    } else if (gasName == "O3") {
-        molecularWeight = 48;
-    } else if (gasName == "CO") {
-        molecularWeight = 28;
-    } else if (gasName == "C6H6") {
-        molecularWeight = 78;
-    } else {
-        return -1;  // Gas not found
+    const char* gases[] = {"SO2", "NO2", "NO", "O3", "CO", "C6H6"};
+    float molecularWeights[] = {64, 46, 30, 48, 28, 78};
+    int numGases = sizeof(gases) / sizeof(gases[0]);
+
+    for (int i = 0; i < numGases; i++) {
+        float ugm3 = calculateUGM3(ppb, molecularWeights[i], 25.0);  // Assuming room temperature
+        Serial.print(gases[i]);
+        Serial.print(" (μg/m³): ");
+        Serial.println(ugm3);
     }
-
-    return convertToUGM3(ppb, molecularWeight);  // Convert PPB to μg/m³ for the specific gas
 }

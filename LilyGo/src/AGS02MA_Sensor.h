@@ -10,7 +10,7 @@ public:
     bool begin();  // Initialize the sensor
     float readPPB();  // Read TVOC in parts per billion
     float convertToUGM3(float ppb, float molecularWeight);  // Convert PPB to μg/m³ based on molecular weight
-    float getUGM3ForGas(const String& gasName);  // Get μg/m³ for known gases
+    void printAllGasConcentrations();  // Print all gas concentrations
 
 private:
     Adafruit_AGS02MA ags02ma;
