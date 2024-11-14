@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MQTT SignalR Client</title>
+    <title>Little Buddy Dashboard</title>
 </head>
 <body>
     <div id="messages"></div>
@@ -10,15 +10,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
     <script>
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/BuddyHub")
+            .withUrl("/hubs/payload/")
             .build();
 
-        print("Connected")
+        console.log("Connected!")
 
-        connection.on("ReceiveMqttMessage", (topic, payload) => {
+        connection.on("ReceivePayload", (payload) => {
             const messagesDiv = document.getElementById("messages");
             const messageElement = document.createElement("div");
-            messageElement.textContent = `Topic: ${topic}, Payload: ${payload}`;
+            messageElement.textContent = `Payload: ${payload}`;
             messagesDiv.appendChild(messageElement);
         });
 

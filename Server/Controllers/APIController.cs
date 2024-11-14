@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace TTNMqttWebApi.Controllers
 {
     [ApiController]
-    [Route("api/test")]
+    [Route("api/payload")]
     public class BudController : ControllerBase
     {
         private readonly MessageStore _messageStore;

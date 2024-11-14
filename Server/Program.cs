@@ -20,6 +20,8 @@ builder.Services.AddSignalR();
 
 var app = builder.Build();
 
+app.MapControllers();
+
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
 
@@ -28,12 +30,13 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-//app.MapHub<BuddyHub>("/BuddyHub");
-app.MapHub<BudHub>("/BuddyHub");
-
 app.UseAuthorization();
 
-app.MapControllers();
+//app.MapHub<BuddyHub>("/BuddyHub");
+app.UseEndpoints(endpoints =>
+{
+    _ = endpoints.MapHub<BudHub>("/hubs/payload");
+});
 
 app.Run();
 

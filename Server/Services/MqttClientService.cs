@@ -27,7 +27,7 @@ namespace TTNMqttWebApi.Services
         private IMqttClient mqttClient;
         private MqttClientOptions options; 
 
-        public MqttClientService(IConfiguration configuration, MessageStore messageStore)
+        public MqttClientService(IConfiguration configuration, MessageStore messageStore, IHubContext<BudHub> hContext)
         {
             _messageStore = messageStore;
             _configuration = configuration;
@@ -35,6 +35,7 @@ namespace TTNMqttWebApi.Services
             brokerAddress = _configuration["TTN:BrokerAddress"];
             appId = _configuration["TTN:AppId"];
             apiKey = _configuration["TTN:ApiKey"];
+            hubContext = hContext;
         }
 
         //internal IHubContext<BudHub> HubContext => _hubContext;
@@ -65,7 +66,7 @@ namespace TTNMqttWebApi.Services
                 Console.WriteLine($"+ Payload = {payloadString}");
                 Console.WriteLine($"This is the type: {e.GetType()}");
                 
-                hubContext.Clients.All.SendAsync("ReceiveMqttMessage", payloadString );
+                hubContext.Clients.All.SendAsync("ReceivePayload", payloadString );
                 payload = payloadString;
 
                 
@@ -76,7 +77,7 @@ namespace TTNMqttWebApi.Services
             {
                 
                     
-                await hubContext.Clients.All.SendAsync("ReceiveNumber", payload);
+                await hubContext.Clients.All.SendAsync("ReceivedPayload", payload);
 
                     //await Task.Delay(1000);
                 
