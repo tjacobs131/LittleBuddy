@@ -1,42 +1,38 @@
-#include <Wire.h>
-#include <Arduino.h>
+#include "AGS02MA_Sensor.h"
+
+AGS02MA_Sensor agsSensor;  // Declare the sensor globally
 
 void setup() {
-  Wire.begin(19, 23);  // Initialize I2C with custom pins (SDA: GPIO 19, SCL: GPIO 23)
-  Serial.begin(115200);
-  Serial.println("\nI2C Scanner");
+    Serial.begin(115200);  // Start the serial connection
+
+    if (agsSensor.begin()) {
+        Serial.println("Sensor initialization successful.");
+    } else {
+        Serial.println("Failed to initialize sensor!");
+    }
 }
 
 void loop() {
-  byte error, address;
-  int nDevices;
+    float ppb = agsSensor.readPPB();  // Read the current TVOC value in PPB
+    Serial.print("TVOC (PPB): ");
+    Serial.println(ppb);
 
-  Serial.println("Scanning...");
+    // Example gases and their molecular weights
+    const char* gases[] = {"SO2", "NO2", "NO", "O3", "CO", "C6H6"};
+    float molecularWeights[] = {64, 46, 30, 48, 28, 78};
+    int numGases = sizeof(gases) / sizeof(gases[0]);
 
-  nDevices = 0;
-  for (address = 1; address < 127; address++ ) {
-    Wire.beginTransmission(address);
-    error = Wire.endTransmission();
-
-    if (error == 0) {
-      Serial.print("I2C device found at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.print(address, HEX);
-      Serial.println("  !");
-
-      nDevices++;
-    } else if (error == 4) {
-      Serial.print("Unknown error at address 0x");
-      if (address < 16)
-        Serial.print("0");
-      Serial.println(address, HEX);
+    for (int i = 0; i < numGases; i++) {
+        float ugm3 = agsSensor.getUGM3ForGas(gases[i]);
+        if (ugm3 >= 0) {
+            Serial.print(gases[i]);
+            Serial.print(" (μg/m³): ");
+            Serial.println(ugm3);
+        } else {
+            Serial.print("Gas not found or error: ");
+            Serial.println(gases[i]);
+        }
     }
-  }
-  if (nDevices == 0)
-    Serial.println("No I2C devices found\n");
-  else
-    Serial.println("done\n");
 
-  delay(5000);  // Wait 5 seconds before scanning again
+    delay(5000);  // Wait for 5 seconds before repeating the loop
 }

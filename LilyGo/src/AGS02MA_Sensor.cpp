@@ -4,7 +4,7 @@ AGS02MA_Sensor::AGS02MA_Sensor() : ags02ma() {}  // Constructor
 
 bool AGS02MA_Sensor::begin() {
     // Initialize I2C with custom pins
-    Wire.begin(19, 23);  // SDA: GPIO 19, SCL: GPIO 23
+    Wire.begin(21, 22);  // SDA: GPIO 19, SCL: GPIO 23
 
     // Initialize the sensor using the custom I2C bus (Wire) and address 0x1A
     return ags02ma.begin(&Wire, 0x1A);
