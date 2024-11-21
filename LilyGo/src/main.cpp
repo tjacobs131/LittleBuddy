@@ -163,13 +163,7 @@ void LittleBuddy(){
             // gas sensor
             Serial.println("& Gettting Gas data");
             sensordata.ppb = GasSensor.readPPB();
-            sensordata.SO2_concentration = GasSensor.getGasConcentration("SO2"); 
-            sensordata.NO2_concentration = GasSensor.getGasConcentration("NO2"); 
-            sensordata.NO__concentration = GasSensor.getGasConcentration("NO"); 
-            sensordata.O3_concentration = GasSensor.getGasConcentration("O3"); 
-            sensordata.CO_concentration = GasSensor.getGasConcentration("CO"); 
-            sensordata.C6H6_concentration = GasSensor.getGasConcentration("C6H6");
-
+            GasSensor.printAllGasConcentrations();
             buddyState = UPDATE_DISPLAY;
             
             break;
@@ -247,7 +241,7 @@ void init()
     Serial.println("Setup");
     // DHT22 niet nodig                                 // werkt in code
     display.begin();                                    // werkt in code
-    GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
+    GasSensor.begin();   // connectie fout pinnen
     dhtSensor.begin();                                  // weerstand plaatsen
     rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
     buzzer.begin();                                     // werkt in code
@@ -276,7 +270,6 @@ void setup() {
     Serial.println("Setup");
     // DHT22 niet nodig                                 // werkt in code
     display.begin();                                    // werkt in code
-    GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
     dhtSensor.begin();                                  // weerstand plaatsen
     rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
     buzzer.begin();                                     // werkt in code
