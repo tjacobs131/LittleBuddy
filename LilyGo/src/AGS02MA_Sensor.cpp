@@ -5,7 +5,7 @@ AGS02MA_Sensor::AGS02MA_Sensor() : ags02ma() {}  // Constructor
 bool AGS02MA_Sensor::begin() {
     // Initialize the sensor using the custom I2C bus (Wire) and address 0x1A
     Wire.begin(21, 22);
-    return ags02ma.begin(&Wire, 0x1A); // Assuming this method exists and accepts these parameters
+return ags02ma.begin(&Wire, 0x1A); // Assuming this method exists and accepts these parameters
 }
 
 float AGS02MA_Sensor::readPPB() {

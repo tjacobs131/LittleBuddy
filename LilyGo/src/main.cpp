@@ -80,6 +80,9 @@ struct SensorData {
     uint8_t uidBuffer[7];
     uint8_t uidLength;
 
+    // test
+    float test; 
+
 };
 SensorData sensordata;
 
@@ -90,6 +93,13 @@ UserData userdata;
 
 double time1;
 bool once = true;
+
+void resetI2CBus() {
+    Wire.end();
+    delay(10);
+    Wire.begin(SDA_PIN, SCL_PIN);
+    delay(10);
+}
 
 void DisplayBuddy(){
 
@@ -122,7 +132,6 @@ void DisplayBuddy(){
 }
 
 void LittleBuddy(){
-
     // Little Buddy Sub-State Machine
     switch (buddyState) {
         case SLEEP:
@@ -155,15 +164,26 @@ void LittleBuddy(){
             Serial.println("& Gettting Sound data");
             sensordata.decibels = micSensor.readMicDecibels();
 
-            // temp sensor
-            Serial.println("& Gettting Temp data");
-            sensordata.humidity = dhtSensor.readHumidity();
-            sensordata.temperature = dhtSensor.readTemperature();
+            // // temp sensor
+            // Serial.println("& Gettting Temp data");
+            // sensordata.humidity = dhtSensor.readHumidity();
+            // sensordata.temperature = dhtSensor.readTemperature();
 
             // gas sensor
-            Serial.println("& Gettting Gas data");
-            sensordata.ppb = GasSensor.readPPB();
-            GasSensor.printAllGasConcentrations();
+            // resetI2CBus();
+            // Serial.println("& Gettting Gas data");
+            // sensordata.ppb = GasSensor.readPPB();
+            // GasSensor.printAllGasConcentrations();
+            sleep(1);
+            sensordata.test = GasSensor.readPPB();
+
+            if (isnan(sensordata.test)) {
+                Serial.println("Error reading Gas Sensor.");
+            } else {
+                Serial.print("PPB Value: ");
+                Serial.println(sensordata.test);
+            }
+            sleep(1);
             buddyState = UPDATE_DISPLAY;
             
             break;
@@ -241,10 +261,10 @@ void init()
     Serial.println("Setup");
     // DHT22 niet nodig                                 // werkt in code
     display.begin();                                    // werkt in code
-    GasSensor.begin();   // connectie fout pinnen
+    // GasSensor.begin();   // connectie fout pinnen
     dhtSensor.begin();                                  // weerstand plaatsen
     rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
-    buzzer.begin();                                     // werkt in code
+    // buzzer.begin();                                     // werkt in code
     button.begin();                                     // nog knop aanmaken
 
     timer1.start();
@@ -267,13 +287,30 @@ void setup() {
     Wire.begin(21,22);
     delay(100);
 
+    Serial.println("Zoeken naar I2C apparaten...");
+
+    int gevonden = 0;
+    for (uint8_t adres = 1; adres < 127; adres++) { // Mogelijke I2C-adressen lopen van 1 tot 127
+        Wire.beginTransmission(adres);
+        if (Wire.endTransmission() == 0) { // Als de transmissie geslaagd is, is er een apparaat
+            Serial.print("I2C apparaat gevonden op adres 0x");
+            Serial.println(adres, HEX);
+            gevonden++;
+        }
+    }
+    delay(100);
+
     Serial.println("Setup");
-    // DHT22 niet nodig                                 // werkt in code
-    display.begin();                                    // werkt in code
+    rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code                              // werkt in code
+    display.begin();
+    if (GasSensor.begin())
+        Serial.println("Gas sensor initialised");
+    else    
+        Serial.println("Gas sensor failed to initialise");
     dhtSensor.begin();                                  // weerstand plaatsen
-    rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
+    
     buzzer.begin();                                     // werkt in code
-    //button.begin();                                   // nog knop aanmaken
+    button.begin();                                   // nog knop aanmaken
 
     timer1.start();
 
@@ -420,6 +457,6 @@ void loop() {
             break;
     }
 
-    display.update();
+   // display.update();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }
