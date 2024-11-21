@@ -95,22 +95,27 @@ void DisplayBuddy(){
 
     switch (buddyDisplay) {
         case HAPPY:
-                display.displayImage(80,25,bitmap_happy,width_happy,height_happy);
+                display.displayImage(80,20,bitmap_happy,width_happy,height_happy);
+                display.displayText("Buddy: HAPPY",0, 50);
             break;
         case SAD:
-                display.displayImage(80,25,bitmap_sad,width_sad,height_sad);
+                display.displayImage(80,20,bitmap_sad,width_sad,height_sad);
+                display.displayText("Buddy: SAD",0, 50);
             break;
         case SOUND:
-                display.displayImage(80,25,bitmap_sound,width_sound,height_sound);
+                display.displayImage(80,20,bitmap_sound,width_sound,height_sound);
+                display.displayText("Buddy: SOUND",0, 50);
             break;
         case TEMP:
-                display.displayImage(80,25,bitmap_temp,width_temp,height_temp);
+                display.displayImage(80,20,bitmap_temp,width_temp,height_temp);
+                display.displayText("Buddy: TEMP",0, 50);
             break;
         case HEART:
-                display.displayImage(80,25,bitmap_heart,width_heart,height_heart);
+                display.displayImage(80,20,bitmap_heart,width_heart,height_heart);
+                display.displayText("Buddy: HEART",0, 50);
             break;
         case NFC:
-                display.displayImage(80,25,bitmap_nfc,width_nfc,height_nfc);
+                display.displayImage(80,20,bitmap_nfc,width_nfc,height_nfc);
             break;
     }
 
@@ -147,13 +152,16 @@ void LittleBuddy(){
             display.displayText("RUN: Get Data",0, 10);
 
             // geluid sensor
+            Serial.println("& Gettting Sound data");
             sensordata.decibels = micSensor.readMicDecibels();
 
             // temp sensor
+            Serial.println("& Gettting Temp data");
             sensordata.humidity = dhtSensor.readHumidity();
             sensordata.temperature = dhtSensor.readTemperature();
-/*
+
             // gas sensor
+            Serial.println("& Gettting Gas data");
             sensordata.ppb = GasSensor.readPPB();
             sensordata.SO2_concentration = GasSensor.getGasConcentration("SO2"); 
             sensordata.NO2_concentration = GasSensor.getGasConcentration("NO2"); 
@@ -161,7 +169,7 @@ void LittleBuddy(){
             sensordata.O3_concentration = GasSensor.getGasConcentration("O3"); 
             sensordata.CO_concentration = GasSensor.getGasConcentration("CO"); 
             sensordata.C6H6_concentration = GasSensor.getGasConcentration("C6H6");
-*/
+
             buddyState = UPDATE_DISPLAY;
             
             break;
@@ -239,7 +247,7 @@ void init()
     Serial.println("Setup");
     // DHT22 niet nodig                                 // werkt in code
     display.begin();                                    // werkt in code
-    //GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
+    GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
     dhtSensor.begin();                                  // weerstand plaatsen
     rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
     buzzer.begin();                                     // werkt in code
@@ -268,7 +276,7 @@ void setup() {
     Serial.println("Setup");
     // DHT22 niet nodig                                 // werkt in code
     display.begin();                                    // werkt in code
-    //GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
+    GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
     dhtSensor.begin();                                  // weerstand plaatsen
     rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
     buzzer.begin();                                     // werkt in code
@@ -277,7 +285,9 @@ void setup() {
     timer1.start();
 
     display.clear();
-    display.displayText("Setup: complete",0, 10);
+    display.displayText("Little Buddy",0, 10);
+    display.displayText("Setup: complete",0, 20);
+    display.displayText("Versie: 1.0",0, 30);
     display.update();
 
     buzzer.playHappyTone();
