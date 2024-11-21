@@ -61,14 +61,14 @@
         // Initialize the charts
         const chartIds = ['chart1', 'chart2', 'chart3'];
 
-        chartIds.forEach(function(id) {
+    
             const ctx = document.getElementById(id).getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: data,
                 options: options
             });
-        });
+        
     </script>
 </body>
 </html>

@@ -9,11 +9,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using SignalR.Hubs;
+using Newtonsoft.Json;
 
 
 
 namespace TTNMqttWebApi.Services
 {
+
+    internal class Payload{
+        public string? frm_payload;
+        public DateTime received_at;
+    }
     public class MqttClientService : BackgroundService
     {
         private readonly IConfiguration _configuration;
@@ -22,7 +28,7 @@ namespace TTNMqttWebApi.Services
         private readonly string appId;
         private readonly string apiKey;
         private readonly IHubContext<BudHub> _hubContext;
-        private string payload;
+        private string TTNpayload;
 
         private IMqttClient mqttClient;
         private MqttClientOptions options; 
@@ -66,22 +72,20 @@ namespace TTNMqttWebApi.Services
                 Console.WriteLine($"+ Payload = {payloadString}");
                 Console.WriteLine($"This is the type: {e.GetType()}");
                 
-                hubContext.Clients.All.SendAsync("ReceivePayload", payloadString );
-                payload = payloadString;
+                
 
+                TTNpayload = payloadString;
+
+                var readablePayload = JsonConvert.DeserializeObject<Payload>(TTNpayload);
+
+                hubContext.Clients.All.SendAsync("ReceivePayload", readablePayload?.frm_payload );
+                Console.WriteLine($"This is the payload: {readablePayload?.frm_payload}");
+                
                 
                 return Task.CompletedTask;
             };
-            
-            async Task SendAsyncMessage()
-            {
-                
-                    
-                await hubContext.Clients.All.SendAsync("ReceivedPayload", payload);
 
-                    //await Task.Delay(1000);
-                
-            }
+            
 
             // Handle connection
             mqttClient.ConnectedAsync += async e =>
