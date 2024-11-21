@@ -241,7 +241,7 @@ void init()
     Serial.println("Setup");
     // DHT22 niet nodig                                 // werkt in code
     display.begin();                                    // werkt in code
-    GasSensor.begin(Wire);   // connectie fout pinnen
+    GasSensor.begin();   // connectie fout pinnen
     dhtSensor.begin();                                  // weerstand plaatsen
     rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
     buzzer.begin();                                     // werkt in code
