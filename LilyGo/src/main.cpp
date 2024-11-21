@@ -59,6 +59,8 @@ OLEDDriver display;
 #include "TimerDriver.h"
 TimerDriver timer1;
 
+#include "LoginUser.h"
+
 struct SensorData {
     // decibel sensor
     float decibels;
@@ -79,12 +81,13 @@ struct SensorData {
     // rfid data
     uint8_t uidBuffer[7];
     uint8_t uidLength;
+    std::string userTag;
 
 };
 SensorData sensordata;
 
 struct UserData {
-    char UserName;
+    std::string UserName;
 };
 UserData userdata;
 
@@ -95,27 +98,27 @@ void DisplayBuddy(){
 
     switch (buddyDisplay) {
         case HAPPY:
-                display.displayImage(80,20,bitmap_happy,width_happy,height_happy);
+                display.displayImage(90,10,bitmap_happy,width_happy,height_happy);
                 display.displayText("Buddy: HAPPY",0, 50);
             break;
         case SAD:
-                display.displayImage(80,20,bitmap_sad,width_sad,height_sad);
+                display.displayImage(90,10,bitmap_sad,width_sad,height_sad);
                 display.displayText("Buddy: SAD",0, 50);
             break;
         case SOUND:
-                display.displayImage(80,20,bitmap_sound,width_sound,height_sound);
+                display.displayImage(90,10,bitmap_sound,width_sound,height_sound);
                 display.displayText("Buddy: SOUND",0, 50);
             break;
         case TEMP:
-                display.displayImage(80,20,bitmap_temp,width_temp,height_temp);
+                display.displayImage(90,10,bitmap_temp,width_temp,height_temp);
                 display.displayText("Buddy: TEMP",0, 50);
             break;
         case HEART:
-                display.displayImage(80,20,bitmap_heart,width_heart,height_heart);
+                display.displayImage(90,10,bitmap_heart,width_heart,height_heart);
                 display.displayText("Buddy: HEART",0, 50);
             break;
         case NFC:
-                display.displayImage(80,20,bitmap_nfc,width_nfc,height_nfc);
+                display.displayImage(90,10,bitmap_nfc,width_nfc,height_nfc);
             break;
     }
 
@@ -134,6 +137,7 @@ void LittleBuddy(){
                 display.clear();
                 DisplayBuddy();
                 display.displayText("RUN: Sleep",0, 10);
+                //display.update();
                 once = false;
             }
 
@@ -163,13 +167,7 @@ void LittleBuddy(){
             // gas sensor
             Serial.println("& Gettting Gas data");
             sensordata.ppb = GasSensor.readPPB();
-            sensordata.SO2_concentration = GasSensor.getGasConcentration("SO2"); 
-            sensordata.NO2_concentration = GasSensor.getGasConcentration("NO2"); 
-            sensordata.NO__concentration = GasSensor.getGasConcentration("NO"); 
-            sensordata.O3_concentration = GasSensor.getGasConcentration("O3"); 
-            sensordata.CO_concentration = GasSensor.getGasConcentration("CO"); 
-            sensordata.C6H6_concentration = GasSensor.getGasConcentration("C6H6");
-
+            GasSensor.printAllGasConcentrations();
             buddyState = UPDATE_DISPLAY;
             
             break;
@@ -241,46 +239,17 @@ void LittleBuddy(){
 void init()
 {
     delay(100);
-    Wire.begin(21,22);
+    Wire.begin(SDA_PIN,SCL_PIN);
     delay(100);
 
     Serial.println("Setup");
     // DHT22 niet nodig                                 // werkt in code
     display.begin();                                    // werkt in code
-    GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
+    GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);     // connectie fout pinnen
     dhtSensor.begin();                                  // weerstand plaatsen
     rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
     buzzer.begin();                                     // werkt in code
     button.begin();                                     // nog knop aanmaken
-
-    timer1.start();
-
-    display.clear();
-    display.displayText("Setup: complete",0, 10);
-    display.update();
-
-    buzzer.playHappyTone();
-    delay(2000);
-}
-
-void setup() {
-    Serial.begin(115200);
-    Serial.println("Starting code");
-
-    //init();
-
-    delay(100);
-    Wire.begin(21,22);
-    delay(100);
-
-    Serial.println("Setup");
-    // DHT22 niet nodig                                 // werkt in code
-    display.begin();                                    // werkt in code
-    GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);   // connectie fout pinnen
-    dhtSensor.begin();                                  // weerstand plaatsen
-    rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
-    buzzer.begin();                                     // werkt in code
-    //button.begin();                                   // nog knop aanmaken
 
     timer1.start();
 
@@ -294,21 +263,15 @@ void setup() {
     delay(2000);
 }
 
+void setup() {
+    Serial.begin(115200);
+    Serial.println("Starting code");
+
+    init();
+}
+
 void loop() {
 
-/*
-    Serial.println("Zoeken naar I2C apparaten...");
-
-    int gevonden = 0;
-    for (uint8_t adres = 1; adres < 127; adres++) { // Mogelijke I2C-adressen lopen van 1 tot 127
-        Wire.beginTransmission(adres);
-        if (Wire.endTransmission() == 0) { // Als de transmissie geslaagd is, is er een apparaat
-            Serial.print("I2C apparaat gevonden op adres 0x");
-            Serial.println(adres, HEX);
-            gevonden++;
-        }
-    }
-*/
     ButtonPressType pressType = button.getPressType();
 
     // Main State Machine
@@ -323,7 +286,6 @@ void loop() {
             display.displayText("State: standby",0, 10);
             display.displayText("READ RFID",0, 20);
 
-
             if (rfid.requestTag()) {
                 Serial.println("& RFID tag detected.");
 
@@ -333,12 +295,20 @@ void loop() {
                     Serial.print(sensordata.uidLength);
                     Serial.print(": ");
 
-                    // Print the UID in hex format
+                    // Create a string to store the UID
+                    sensordata.userTag = "";
+
+                    // Convert the UID bytes to a hex string
                     for (uint8_t i = 0; i < sensordata.uidLength; i++) {
-                        Serial.print(sensordata.uidBuffer[i] < 16 ? " 0" : " ");
-                        Serial.print(sensordata.uidBuffer[i], HEX);
+                        if (sensordata.uidBuffer[i] < 16) {
+                            sensordata.userTag += "0"; // Add leading zero for single digit hex values
+                        }
+                        sensordata.userTag += std::to_string(sensordata.uidBuffer[i]); // Append the hex value to the string
                     }
-                    Serial.println();
+
+                    // Print the UID string
+                    Serial.println(sensordata.userTag.c_str());
+
 
                     mainState = LOGIN;
                 } else {
@@ -347,9 +317,6 @@ void loop() {
             } else {
                 Serial.println("& No RFID tag in range.");
             }
-
-            // delay(2000);
-            // mainState = LOGIN;
 
             break;
 
@@ -362,10 +329,14 @@ void loop() {
             DisplayBuddy();
             display.displayText("State: Login",0, 10);
 
+            userdata.UserName = check_user(sensordata.userTag);
 
-            // verbinden met server voor naam en inlog
-            delay(2000);
-            loginSuccess = true;
+            if (userdata.UserName != "Not a User")
+            {
+                loginSuccess = true;
+                display.displayText("Succesfull",0, 20);
+                display.displayText(userdata.UserName.c_str(),0, 30);
+            }
 
             if (loginSuccess) {
                 // Transition to little buddy sub-state machine
@@ -385,8 +356,13 @@ void loop() {
             display.clear();
             display.displayText("State: Logout",0, 10);
 
+            sensordata.uidBuffer[1] = 0;
+            sensordata.uidLength = 0;
+            userdata.UserName = "";
+
             // logout request server
 
+            delay(2);
             mainState = STANDBY;
 
             break;
@@ -397,13 +373,14 @@ void loop() {
 
             display.displayText("Short: Data",0, 20);
             display.displayText("Long: Logout",0, 30);
+            display.displayText(userdata.UserName.c_str(),0, 40);
 
             if (pressType == SHORT_PRESS) {
-                //Serial.println("Knop kort ingedrukt!");
+                Serial.println("! Knop kort ingedrukt!");
                 buddyState = GET_DATA;
             } 
             if (pressType == LONG_PRESS) {
-                //Serial.println("Knop lang ingedrukt!");
+                Serial.println("! Knop lang ingedrukt!");
                 mainState = LOGOUT;
             }
 
@@ -420,13 +397,13 @@ void loop() {
             buzzer.playErrorTone();
 
             if (pressType == LONG_PRESS) {
-                //Serial.println("Knop lang ingedrukt!");
+                Serial.println("! Knop lang ingedrukt!");
                 init();
                 mainState = STANDBY;
             }
             break;
     }
 
-    display.update();
+    //if(buddyState != SLEEP) display.update();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }
