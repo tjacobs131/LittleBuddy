@@ -7,7 +7,7 @@ enum BuddyDisplay { HAPPY, SAD, SOUND, TEMP, HEART, NFC};
 
 // Initial states
 MainState mainState = STANDBY;
-BuddyState buddyState = SLEEP;
+BuddyState buddyState = GET_DATA;
 BuddyDisplay buddyDisplay = HEART;
 
 // Example global variables to control state transitions
@@ -137,8 +137,6 @@ void LittleBuddy(){
                 display.clear();
                 DisplayBuddy();
                 display.displayText("RUN: Sleep",0, 10);
-                //display.update();
-                once = false;
             }
 
             if (timer1.elapsedSeconds() > 10) {
@@ -371,9 +369,16 @@ void loop() {
             //Serial.println("State: RUNNING");
             LittleBuddy();
 
-            display.displayText("Short: Data",0, 20);
-            display.displayText("Long: Logout",0, 30);
-            display.displayText(userdata.UserName.c_str(),0, 40);
+            if (buddyState != SLEEP or 
+                buddyState == SLEEP and once == true)
+            {
+                display.displayText("Short: Data",0, 20);
+                display.displayText("Long: Logout",0, 30);
+                display.displayText(userdata.UserName.c_str(),0, 40);
+                display.update();
+
+                if(buddyState == SLEEP) once = false;
+            }
 
             if (pressType == SHORT_PRESS) {
                 Serial.println("! Knop kort ingedrukt!");
@@ -404,6 +409,6 @@ void loop() {
             break;
     }
 
-    //if(buddyState != SLEEP) display.update();
+    if(buddyState != SLEEP) display.update();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }
