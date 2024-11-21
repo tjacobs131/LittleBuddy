@@ -137,7 +137,7 @@ void LittleBuddy(){
                 display.clear();
                 DisplayBuddy();
                 display.displayText("RUN: Sleep",0, 10);
-                //display.update();
+                display.update();
                 once = false;
             }
 
@@ -404,6 +404,6 @@ void loop() {
             break;
     }
 
-    //if(buddyState != SLEEP) display.update();
+    if(buddyState != SLEEP) display.update();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }
