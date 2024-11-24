@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace TTNMqttWebApi.Controllers
@@ -6,9 +7,9 @@ namespace TTNMqttWebApi.Controllers
     [Route("api/payload")]
     public class BudController : ControllerBase
     {
-        private readonly MessageStore _messageStore;
+        private readonly BuddyDataStore _messageStore;
 
-        public BudController(MessageStore messageStore)
+        public BudController(BuddyDataStore messageStore)
         {
             _messageStore = messageStore;
         }
@@ -16,8 +17,12 @@ namespace TTNMqttWebApi.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            var latestPayload = _messageStore.GetLatestPayload();
-            return Ok(latestPayload ?? "No data received yet");
+            BuddyGroup latestReading = _messageStore.GetLatestReading();
+            if (latestReading == null){
+                return Ok("No data received yet");
+            } else {
+                return Ok(latestReading.ToJson());
+            }
         }
     }
 }
