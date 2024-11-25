@@ -1,98 +1,167 @@
-using System.Globalization;
-using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using MQTTnet;
 using MQTTnet.Client;
-using System;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using SignalR.Hubs;
 using Newtonsoft.Json;
-
-
+using System.Text.RegularExpressions;
 
 namespace TTNMqttWebApi.Services
 {
-
-    internal class Payload{
-        public string? frm_payload;
-        public DateTime received_at;
+    internal class Payload
+    {
+        public UplinkMessage uplink_message { get; set; }
+        public EndDeviceIds end_device_ids { get; set; }
+        public DateTime received_at { get; set; }
     }
+
+    internal class UplinkMessage
+    {
+        public string frm_payload { get; set; }
+    }
+
+    internal class EndDeviceIds
+    {
+        public string device_id { get; set; }
+    }
+
     public class MqttClientService : BackgroundService
     {
         private readonly IConfiguration _configuration;
-        private readonly MessageStore _messageStore;
         private readonly string brokerAddress;
         private readonly string appId;
         private readonly string apiKey;
         private readonly IHubContext<BudHub> _hubContext;
-        private string TTNpayload;
 
         private IMqttClient mqttClient;
-        private MqttClientOptions options; 
+        private MqttClientOptions options;
 
-        public MqttClientService(IConfiguration configuration, MessageStore messageStore, IHubContext<BudHub> hContext)
+        private readonly BuddyDataStore buddyDataStore;
+
+        public MqttClientService(IConfiguration configuration, BuddyDataStore buddyDataStore, IHubContext<BudHub> hubContext)
         {
-            _messageStore = messageStore;
+            this.buddyDataStore = buddyDataStore;
             _configuration = configuration;
+            _hubContext = hubContext;
+
             // Read settings from configuration
             brokerAddress = _configuration["TTN:BrokerAddress"];
             appId = _configuration["TTN:AppId"];
             apiKey = _configuration["TTN:ApiKey"];
-            hubContext = hContext;
         }
 
-        //internal IHubContext<BudHub> HubContext => _hubContext;
-        private readonly IHubContext<BudHub> hubContext;
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        private void ConfigureMqttClient(CancellationToken stoppingToken)
         {
-            // Configure MQTT client options
             options = new MqttClientOptionsBuilder()
                 .WithClientId(Guid.NewGuid().ToString())
                 .WithTcpServer(brokerAddress, 8883)
                 .WithCredentials(appId, apiKey)
-                .WithTls() // Use TLS for secure connection
+                .WithTls()
                 .Build();
 
-            // Create MQTT client
             var factory = new MqttFactory();
             mqttClient = factory.CreateMqttClient();
 
             // Handle incoming messages
             mqttClient.ApplicationMessageReceivedAsync += e =>
             {
-                var payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-                _messageStore.UpdatePayload(payloadString);
+                // Payload received from TTN
+                string? payloadString = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
 
                 Console.WriteLine("### RECEIVED APPLICATION MESSAGE ###");
                 Console.WriteLine($"+ Topic = {e.ApplicationMessage.Topic}");
                 Console.WriteLine($"+ Payload = {payloadString}");
-                Console.WriteLine($"This is the type: {e.GetType()}");
-                
-                
 
-                TTNpayload = payloadString;
+                // Deserialize payload
+                Payload readablePayload;
+                try
+                {
+                    readablePayload = JsonConvert.DeserializeObject<Payload>(payloadString)!;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error deserializing payload: {ex.Message}");
+                    return Task.CompletedTask;
+                }
 
-                var readablePayload = JsonConvert.DeserializeObject<Payload>(TTNpayload);
+                if (string.IsNullOrEmpty(readablePayload.uplink_message.frm_payload))
+                {
+                    Console.WriteLine("frm_payload is null or empty");
+                    return Task.CompletedTask;
+                }
 
-                hubContext.Clients.All.SendAsync("ReceivePayload", readablePayload?.frm_payload );
-                Console.WriteLine($"This is the payload: {readablePayload?.frm_payload}");
+                // Isolate the payload
+                byte[] payloadBytes;
+                payloadBytes = Convert.FromBase64String(readablePayload.uplink_message.frm_payload);
+
+                // Ensure payload length is a multiple of 3
+                if (payloadBytes.Length < 3 || payloadBytes.Length % 3 != 0)
+                {
+                    Console.WriteLine("Incorrect amount of payload bytes");
+                    return Task.CompletedTask;
+                }
                 
+                // Retrieve or create BuddyReading
+                BuddyGroup previousBuddyGroup = buddyDataStore.GetLatestReading();
+                string deviceID = readablePayload.end_device_ids.device_id;
+                BuddyDevice? buddyDevice = previousBuddyGroup.GetBuddyDevice(deviceID);
+                if (buddyDevice == null)
+                {
+                    buddyDevice = new BuddyDevice();
+                }
                 
+                // Process each 3-byte sequence
+                for (int i = 0; i < payloadBytes.Length; i += 3)
+                {
+                    // Extract sensor ID and value
+                    int sensorID = payloadBytes[i];
+                    short value = (short)((payloadBytes[i + 1] << 8) | payloadBytes[i + 2]);
+
+                    string username;
+                    if (sensorID == 0){ // RFID sensor code, we are setting the username
+                        Console.WriteLine(value);
+                        switch(value){
+                            case 0:
+                                username = "Koen van Wijlick";
+                                break;
+                            case 1:
+                                username = "Koen Dirckx";
+                                break;
+                            case 2:
+                                username = "James Boogaard";
+                                break;
+                            case 3:
+                                username = "Tom Jacobs";
+                                break;
+                            default:
+                                username = "Buddy";
+                                break;
+                        }
+                        Console.WriteLine("Username: " + username);
+                        buddyDevice.RegisterDeviceName(username);
+                        continue;
+                    }
+
+                    // Create SensorReading
+                    BuddySensorReading sensorReading = new BuddySensorReading(value, readablePayload.received_at);
+
+                    // Add the sensorReading to BuddyReading
+                    buddyDevice.AddSensorReading(sensorID, sensorReading);
+
+                    previousBuddyGroup.AddBuddyDevice(deviceID, buddyDevice);
+                }
+
+                // Send all readings after processing
+                SendSensorReadings();
+
                 return Task.CompletedTask;
             };
-
-            
 
             // Handle connection
             mqttClient.ConnectedAsync += async e =>
             {
                 Console.WriteLine("### CONNECTED WITH TTN MQTT BROKER ###");
 
-                // Subscribe to uplink messages from all devices in your application
                 var topicFilter = $"v3/{appId}@ttn/devices/+/up";
                 await mqttClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic(topicFilter).Build());
 
@@ -114,6 +183,11 @@ namespace TTNMqttWebApi.Services
                     Console.WriteLine($"### RECONNECTING FAILED ###\n{ex.Message}");
                 }
             };
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            ConfigureMqttClient(stoppingToken);
 
             // Connect to MQTT broker
             try
@@ -129,6 +203,19 @@ namespace TTNMqttWebApi.Services
             // Keep the task running until cancellation is requested
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }
-    }
 
+        private async Task SendSensorReadings(){
+            string json = buddyDataStore.GetLatestReading().ToJson();
+
+            Console.WriteLine("Sending readings to frontend");
+            Console.WriteLine($"+ Frontend JSON = {json}");
+
+            await SendAsyncMessage(json);
+        }
+
+        private async Task SendAsyncMessage(string payload)
+        {
+            await _hubContext.Clients.All.SendAsync("ReceivePayload", payload);
+        }
+    }
 }

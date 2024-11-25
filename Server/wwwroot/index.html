@@ -30,7 +30,7 @@
         connection.on("ReceivePayload", (payload) => {
             const messagesDiv = document.getElementById("messages");
             const messageElement = document.createElement("div");
-            messageElement.textContent = `Payload: ${payload}`;
+            messageElement.textContent = `${payload}`;
             messagesDiv.appendChild(messageElement);
         });
 
@@ -62,7 +62,7 @@
         const chartIds = ['chart1', 'chart2', 'chart3'];
 
     
-            const ctx = document.getElementById(id).getContext('2d');
+            const ctx = document.getElementById("chart1").getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: data,

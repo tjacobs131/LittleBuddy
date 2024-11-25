@@ -1,17 +1,17 @@
-using System.Threading;
+using System.Text.RegularExpressions;
 
-public class MessageStore
+public class BuddyDataStore
 {
     private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
-    private string _latestPayload;
+    private BuddyGroup? lastBuddyGroupState = new BuddyGroup();
 
-    public void UpdatePayload(string payload)
+    public void UpdateReading(BuddyGroup groupReading)
     {
-        _latestPayload = "";
+        lastBuddyGroupState = null;
         _lock.EnterWriteLock();
         try
         {
-            _latestPayload = payload;
+            lastBuddyGroupState = groupReading;
         }        
         finally
         {
@@ -19,12 +19,12 @@ public class MessageStore
         }
     }
 
-    public string GetLatestPayload()
+    public BuddyGroup GetLatestReading()
     {
         _lock.EnterReadLock();
         try
         {
-            return _latestPayload;
+            return lastBuddyGroupState!;
         }
         finally
         {

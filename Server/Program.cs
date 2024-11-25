@@ -14,7 +14,7 @@ builder.Services.AddControllers();
 // Register the MQTT client background service
 builder.Services.AddHostedService<MqttClientService>();
 
-builder.Services.AddSingleton<MessageStore>();
+builder.Services.AddSingleton<BuddyDataStore>();
 
 builder.Services.AddSignalR();
 
