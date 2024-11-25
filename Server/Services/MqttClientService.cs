@@ -139,6 +139,7 @@ namespace TTNMqttWebApi.Services
                         }
                         Console.WriteLine("Username: " + username);
                         buddyDevice.RegisterDeviceName(username);
+                        previousBuddyGroup.AddBuddyDevice(deviceID, buddyDevice);
                         continue;
                     }
 

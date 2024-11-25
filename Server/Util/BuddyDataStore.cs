@@ -21,6 +21,8 @@ public class BuddyDataStore
 
     public BuddyGroup GetLatestReading()
     {
+
+        Console.WriteLine(lastBuddyGroupState.ToJson());
         _lock.EnterReadLock();
         try
         {
