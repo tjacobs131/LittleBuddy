@@ -10,19 +10,19 @@ namespace TTNMqttWebApi.Services
 {
     internal class Payload
     {
-        public UplinkMessage uplink_message { get; set; }
-        public EndDeviceIds end_device_ids { get; set; }
-        public DateTime received_at { get; set; }
+        public required UplinkMessage uplink_message { get; set; }
+        public required EndDeviceIds end_device_ids { get; set; }
+        public required DateTime received_at { get; set; }
     }
 
     internal class UplinkMessage
     {
-        public string frm_payload { get; set; }
+        public required string frm_payload { get; set; }
     }
 
     internal class EndDeviceIds
     {
-        public string device_id { get; set; }
+        public required string device_id { get; set; }
     }
 
     public class MqttClientService : BackgroundService
@@ -33,8 +33,8 @@ namespace TTNMqttWebApi.Services
         private readonly string apiKey;
         private readonly IHubContext<BudHub> _hubContext;
 
-        private IMqttClient mqttClient;
-        private MqttClientOptions options;
+        private IMqttClient? mqttClient;
+        private MqttClientOptions? options;
 
         private readonly BuddyDataStore buddyDataStore;
 
@@ -45,9 +45,9 @@ namespace TTNMqttWebApi.Services
             _hubContext = hubContext;
 
             // Read settings from configuration
-            brokerAddress = _configuration["TTN:BrokerAddress"];
-            appId = _configuration["TTN:AppId"];
-            apiKey = _configuration["TTN:ApiKey"];
+            brokerAddress = _configuration["TTN:BrokerAddress"]!;
+            appId = _configuration["TTN:AppId"]!;
+            apiKey = _configuration["TTN:ApiKey"]!;
         }
 
         private void ConfigureMqttClient(CancellationToken stoppingToken)
@@ -56,7 +56,14 @@ namespace TTNMqttWebApi.Services
                 .WithClientId(Guid.NewGuid().ToString())
                 .WithTcpServer(brokerAddress, 8883)
                 .WithCredentials(appId, apiKey)
-                .WithTls()
+                .WithTlsOptions(o =>
+                {
+                    o.UseTls();
+                    o.WithSslProtocols(System.Security.Authentication.SslProtocols.Tls12);
+                    o.WithAllowUntrustedCertificates(false); // Reject untrusted certificates
+                    o.WithIgnoreCertificateChainErrors(false); // Validate the entire chain
+                    o.WithIgnoreCertificateRevocationErrors(false); // Check for revoked certificates
+                })
                 .Build();
 
             var factory = new MqttFactory();
@@ -104,22 +111,23 @@ namespace TTNMqttWebApi.Services
                 // Retrieve or create BuddyReading
                 BuddyGroup previousBuddyGroup = buddyDataStore.GetLatestReading();
                 string deviceID = readablePayload.end_device_ids.device_id;
-                BuddyDevice? buddyDevice = previousBuddyGroup.GetBuddyDevice(deviceID);
-                if (buddyDevice == null)
+                BuddyDevice buddyDevice;
+                try {
+                    buddyDevice = previousBuddyGroup.GetBuddyDevice(deviceID);
+                } catch (KeyNotFoundException)
                 {
+                    Console.WriteLine($"### REGISTERING NEW DEVICE: {deviceID} ###");
                     buddyDevice = new BuddyDevice();
                 }
                 
-                // Process each 3-byte sequence
+                // Process the payload in 3 byte chunks
                 for (int i = 0; i < payloadBytes.Length; i += 3)
                 {
-                    // Extract sensor ID and value
                     int sensorID = payloadBytes[i];
-                    short value = (short)((payloadBytes[i + 1] << 8) | payloadBytes[i + 2]);
+                    int value = (payloadBytes[i + 1] << 8) | payloadBytes[i+2]; // The sensor's reading is represented in the last two bytes
 
                     string username;
                     if (sensorID == 0){ // RFID sensor code, we are setting the username
-                        Console.WriteLine(value);
                         switch(value){
                             case 0:
                                 username = "Koen van Wijlick";
@@ -137,7 +145,7 @@ namespace TTNMqttWebApi.Services
                                 username = "Buddy";
                                 break;
                         }
-                        Console.WriteLine("Username: " + username);
+                        Console.WriteLine($"### {deviceID} now belongs to {username} ###");
                         buddyDevice.RegisterDeviceName(username);
                         previousBuddyGroup.AddBuddyDevice(deviceID, buddyDevice);
                         continue;
@@ -153,7 +161,7 @@ namespace TTNMqttWebApi.Services
                 }
 
                 // Send all readings after processing
-                SendSensorReadings();
+                _ = SendSensorReadings();
 
                 return Task.CompletedTask;
             };
@@ -193,6 +201,12 @@ namespace TTNMqttWebApi.Services
             // Connect to MQTT broker
             try
             {
+                if (mqttClient == null || options == null)
+                {
+                    Console.WriteLine("MQTT client or options is not configured.");
+                    return;
+                }
+
                 await mqttClient.ConnectAsync(options, stoppingToken);
             }
             catch (Exception ex)
@@ -208,8 +222,8 @@ namespace TTNMqttWebApi.Services
         private async Task SendSensorReadings(){
             string json = buddyDataStore.GetLatestReading().ToJson();
 
-            Console.WriteLine("Sending readings to frontend");
-            Console.WriteLine($"+ Frontend JSON = {json}");
+            Console.WriteLine("### SENDING JSON TO FRONTEND ###");
+            Console.WriteLine($"+ Frontend Json = {json}");
 
             await SendAsyncMessage(json);
         }

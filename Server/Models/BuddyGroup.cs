@@ -9,7 +9,7 @@ public class BuddyGroup
 
     public BuddyDevice GetBuddyDevice(string deviceId)
     {
-        return BuddyDevices.ContainsKey(deviceId) ? BuddyDevices[deviceId] : null;
+        return BuddyDevices.ContainsKey(deviceId) ? BuddyDevices[deviceId] : throw new KeyNotFoundException();
     }
 
     public void AddBuddyDevice(string deviceId, BuddyDevice device)
@@ -21,7 +21,7 @@ public class BuddyGroup
     {
         if (BuddyDevices == null || BuddyDevices.Count == 0)
         {
-            return "No buddy readings available.";
+            return "No devices connected.";
         }
 
         var devicesJson = string.Join(",", BuddyDevices.Select(kvp =>

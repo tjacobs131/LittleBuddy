@@ -36,6 +36,7 @@
             const messageElement = document.createElement("div");
             messageElement.textContent = `${payload}`;
             messagesDiv.appendChild(messageElement);
+            messagesDiv.appendChild(document.createElement("br"));
 
             const payloadData = JSON.parse(payload);
             const buddyDevices = payloadData.map(device => BuddyDevice.fromJson(device));
