@@ -8,8 +8,9 @@ void setup() {
     // Initialize the LoRaSender
     loraSender.init();
 
-    // Prepare your payload with 5 values
-    uint8_t data[1] = { 10}; // Replace with your actual values
+    uint8_t data[2]; // Replace with your actual values
+    data[0] = 20;
+    data[1] = 30;
     loraSender.send(data, sizeof(data));
 }
 
