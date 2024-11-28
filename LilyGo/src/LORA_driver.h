@@ -1,4 +1,4 @@
-/*
+
 #ifndef LORADRIVER_H
 #define LORADRIVER_H
 
@@ -31,4 +31,3 @@ private:
 };
 
 #endif // LORADRIVER_H
-*/
