@@ -2,8 +2,23 @@
 <html>
 <head>
     <title>Little Buddy Dashboard</title>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
+    <div class="dashboard-header">
+        <div id="username-display">User: Not Connected</div>
+    </div>
+    <div class="chart-container">
+        <div class="chart">
+            <canvas id="chart1"></canvas>
+        </div>
+        <div class="chart">
+            <canvas id="chart2"></canvas>
+        </div>
+        <div class="chart">
+            <canvas id="chart3"></canvas>
+        </div>
+    </div>
     <div id="messages"></div>
 
     <!-- Include SignalR client library -->
@@ -13,16 +28,153 @@
             .withUrl("/hubs/payload/")
             .build();
 
-        console.log("Connected!")
+        
+        console.log("Connected!");
 
         connection.on("ReceivePayload", (payload) => {
             const messagesDiv = document.getElementById("messages");
             const messageElement = document.createElement("div");
-            messageElement.textContent = `Payload: ${payload}`;
+            messageElement.textContent = `${payload}`;
             messagesDiv.appendChild(messageElement);
+            messagesDiv.appendChild(document.createElement("br"));
+
+            const payloadData = JSON.parse(payload);
+            const buddyDevices = payloadData.map(device => BuddyDevice.fromJson(device));
+            // Update charts with the new data
+            buddyDevices.forEach(device => {
+                updateCharts(device);
+                updateUsernameDisplay(device.username);
+            });
+
         });
 
+        function updateUsernameDisplay(username) {
+            const usernameElement = document.getElementById('username-display');
+            if (usernameElement) {
+                usernameElement.textContent = `User: ${username}`;
+            }
+        }
+
         connection.start().catch(err => console.error(err.toString()));
+    </script>
+
+    
+    
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        class Reading {
+            constructor(timestamp, value) {
+                this.timestamp = new Date(timestamp);
+                this.value = value;
+            }
+    
+            static fromJson(json) {
+                return new Reading(json.Timestamp, json.Value);
+            }
+        }
+        class Sensor {
+            constructor(sensorId, readings = []) {
+                this.sensorId = sensorId;
+                this.readings = readings;
+            }
+    
+            static fromJson(json) {
+                const readings = json.Readings.map(reading => Reading.fromJson(reading));
+                return new Sensor(json.SensorID, readings);
+            }
+    
+            getLatestReading() {
+                if (this.readings.length === 0) return null;
+                return this.readings[this.readings.length - 1];
+            }
+    
+            getReadingHistory() {
+                return this.readings.map(reading => ({
+                    timestamp: reading.timestamp,
+                    value: reading.value
+                }));
+            }
+        }
+    
+        class BuddyDevice {
+            constructor(deviceId, username, sensors = []) {
+                this.deviceId = deviceId;
+                this.username = username;
+                this.sensors = sensors;
+            }
+
+
+    
+            static fromJson(json) {
+                const sensors = json.BuddyDevice.map(sensor => Sensor.fromJson(sensor));
+                return new BuddyDevice(json.DeviceID, json.Username, sensors);
+            }
+    
+            getSensorById(id) {
+                return this.sensors.find(sensor => sensor.sensorId === id);
+            }
+    
+            getAllSensorsLatestReadings() {
+                return this.sensors.map(sensor => ({
+                    sensorId: sensor.sensorId,
+                    reading: sensor.getLatestReading()
+                }));
+            }
+        }
+    
+        function updateCharts(buddyDevice) {
+        const chartContexts = {
+            1: document.getElementById('chart1'),
+            2: document.getElementById('chart2'),
+            3: document.getElementById('chart3')
+        };
+
+      
+    
+        buddyDevice.sensors.forEach(sensor => {
+            const chartContext = chartContexts[sensor.sensorId];
+            if (!chartContext) return;
+    
+            const readings = sensor.getReadingHistory();
+            
+            // Update or create new chart
+            const chartData = {
+                labels: readings.map(r => r.timestamp.toLocaleTimeString()),
+                datasets: [{
+                    label: `Sensor ${sensor.sensorId} Readings`,
+                    data: readings.map(r => r.value),
+                    borderWidth: 1,
+                    borderColor: '#36A2EB',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)'
+                }]
+            };
+    
+            const chartOptions = {
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                },
+                animation: {
+                    duration: 0 // Disable animation for better performance
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            };
+    
+            if (chartContext.chart) {
+                chartContext.chart.data = chartData;
+                chartContext.chart.update();
+            } else {
+                chartContext.chart = new Chart(chartContext.getContext('2d'), {
+                    type: 'line',
+                    data: chartData,
+                    options: chartOptions
+                });
+            }
+        });
+    }
     </script>
 </body>
 </html>
