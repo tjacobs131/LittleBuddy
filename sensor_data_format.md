@@ -18,10 +18,10 @@ Sensor ID:<br>
 10 Gas_C6H6<br>
 <br>
 Data:<br>
-RFID<br> geef factor
-Temp<br> factor 10
-Sound<br> factor 10
-Gas<br> factor 10
+RFID: geen factor <br>
+Temp: factor 10 <br> 
+Sound: factor 10 <br>
+Gas: factor 10 <br> 
 <br>
 | Sensor | Possible payload (hex) | Description |
 | ------ | --------------- | ----------- |
