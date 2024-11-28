@@ -137,6 +137,8 @@ void LittleBuddy(){
                 display.clear();
                 DisplayBuddy();
                 display.displayText("RUN: Sleep",0, 10);
+                display.update();
+                once = false;
             }
 
             if (timer1.elapsedSeconds() > 10) {
