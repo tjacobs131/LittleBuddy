@@ -38,3 +38,20 @@ google-services.json
 .vscode/launch.json
 .vscode/ipch
 LilyGo/include/secrets.h
+
+# C#
+Server/bin/
+Server/obj/
+Server/*/bin/
+Server/*/obj/
+Server/node_modules
+
+# Visual Studio cache files
+.vs/
+
+# User-specific files
+*.user
+*.suo
+
+# Auto-generated AssemblyInfo files
+**/Properties/AssemblyInfo.cs
