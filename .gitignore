@@ -44,7 +44,7 @@ Server/bin/
 Server/obj/
 Server/*/bin/
 Server/*/obj/
-Server/*/node_modules
+Server/node_modules
 
 # Visual Studio cache files
 .vs/

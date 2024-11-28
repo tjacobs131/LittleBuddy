@@ -1,0 +1,9 @@
+.chart-container {
+    display: flex;
+    justify-content: space-around;
+}
+.chart {
+    flex: 1;
+    max-width: 30%;
+    margin: 0 10px;
+}
