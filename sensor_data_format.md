@@ -6,7 +6,7 @@ You can send a payload of any length, as long as the total length is divisible b
 <br>
 Sensor ID:<br>
 00 RFID<br>
-01 Temp_ Himid<br>
+01 Temp_ Humid<br>
 02 Temp_Degrees<br>
 03 Sound_db<br>
 04 Gas_ppb<br>
@@ -18,10 +18,10 @@ Sensor ID:<br>
 10 Gas_C6H6<br>
 <br>
 Data:<br>
-RFID<br>
-Temp<br>
-Sound<br>
-Gas<br>
+RFID<br> geef factor
+Temp<br> factor 10
+Sound<br> factor 10
+Gas<br> factor 10
 <br>
 | Sensor | Possible payload (hex) | Description |
 | ------ | --------------- | ----------- |
