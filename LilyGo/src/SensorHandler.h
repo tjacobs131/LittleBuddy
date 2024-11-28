@@ -59,7 +59,7 @@ class SensorHandler
             delay(100);
 
             display.begin();                                    // werkt in code
-            GasSensor.begin(AGS02MAPIN_SDA,AGS02MAPIN_SCL);     // connectie fout pinnen
+            GasSensor.begin();     // connectie fout pinnen
             dhtSensor.begin();                                  // weerstand plaatsen
             rfid.begin(PN532PIN_SDA,PN532PIN_SCL);              // werkt in code
             buzzer.begin();                                     // werkt in code
