@@ -89,16 +89,16 @@ class BuddyRun
 
                     // gas sensor
                     Serial.println("& Gettting Gas data");
-                    //sensordata.ppb = ref_mySensor.GasSensor.readPPB();
-                        ref_myLora.saveData(0,sensordata.ppb,"Gas_ppb");
-                    //sensordata.SO2_concentration = ref_mySensor.GasSensor.getGasConcentration("SO2");
-                        ref_myLora.saveData(0,sensordata.SO2_concentration,"Gas_SO2"); 
-                    //sensordata.NO2_concentration = ref_mySensor.GasSensor.getGasConcentration("NO2"); 
-                        ref_myLora.saveData(0,sensordata.NO2_concentration,"Gas_NO2");
-                    //sensordata.NO__concentration = ref_mySensor.GasSensor.getGasConcentration("NO"); 
-                        ref_myLora.saveData(0,sensordata.NO__concentration,"Gas_NO");
-                    //sensordata.C6H6_concentration = ref_mySensor.GasSensor.getGasConcentration("C6H6");
-                        ref_myLora.saveData(0,sensordata.C6H6_concentration,"Gas_C6H6");
+                    sensordata.ppb = ref_mySensor.GasSensor.readPPB();
+                    ref_myLora.saveData(0,sensordata.ppb,"Gas_ppb");
+                    sensordata.SO2_concentration = ref_mySensor.GasSensor.getGasConcentration("SO2");
+                    ref_myLora.saveData(0,sensordata.SO2_concentration,"Gas_SO2"); 
+                    sensordata.NO2_concentration = ref_mySensor.GasSensor.getGasConcentration("NO2"); 
+                    ref_myLora.saveData(0,sensordata.NO2_concentration,"Gas_NO2");
+                    sensordata.NO__concentration = ref_mySensor.GasSensor.getGasConcentration("NO"); 
+                    ref_myLora.saveData(0,sensordata.NO__concentration,"Gas_NO");
+                    sensordata.C6H6_concentration = ref_mySensor.GasSensor.getGasConcentration("C6H6");
+                    ref_myLora.saveData(0,sensordata.C6H6_concentration,"Gas_C6H6");
 
                     buddyState = UPDATE_DISPLAY;
                     
@@ -161,7 +161,7 @@ class BuddyRun
                     Serial.println( sensordata.C6H6_concentration);
 
                     output_message = ref_myLora.make_total_message_payload();
-                    ref_myLora.lora.sendData(output_message);
+                    ref_myLora.lora.send(output_message, 27); //:TODO: check length
 
                     buddyState = SLEEP;
 

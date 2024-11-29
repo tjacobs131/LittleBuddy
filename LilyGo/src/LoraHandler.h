@@ -1,6 +1,6 @@
 #include "Arduino.h"
 
-#include "LORA_driver.h"
+#include "LoRaSender.h"
 
 struct LoraMessage {
     uint8_t sensorID_RFID = 00;
@@ -33,7 +33,7 @@ struct LoraMessage {
 class LoraHandler
 {
     public:
-        LoRaDriver lora;
+        LoRaSender lora;
         LoraMessage loraMessage;
 
     void saveData(uint8_t data1, uint8_t data2, std::string DataType);

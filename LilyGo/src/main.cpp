@@ -35,7 +35,7 @@ void setup() {
     Serial.println("Starting code");
 
     mySensor.init();
-    myLora.lora.begin();
+    myLora.lora.init();
     myBuddyrun.init();
 
     mySensor.display.clear();
@@ -111,7 +111,7 @@ void loop() {
 
             // message verzenden
             mainvar.output_message_single = myLora.make_single_message_payload("RFID");
-            myLora.lora.sendData(mainvar.output_message_single);
+            myLora.lora.send(mainvar.output_message_single, 27); //:TODO: check length
 
 
             delay(2000);
