@@ -7,10 +7,11 @@
 class AGS02MA_Sensor {
 public:
     AGS02MA_Sensor();  // Constructor
-    bool begin();  // Initialize the sensor
+    bool begin(uint8_t SDA, uint8_t SCL);  // Initialize the sensor
     float readPPB();  // Read TVOC in parts per billion
     float convertToUGM3(float ppb, float molecularWeight);  // Convert PPB to μg/m³ based on molecular weight
-    void printAllGasConcentrations();  // Print all gas concentrations
+    float getGasConcentration(const char* gasType);
+    void printAllGasConcentrations();
 
 private:
     Adafruit_AGS02MA ags02ma;
