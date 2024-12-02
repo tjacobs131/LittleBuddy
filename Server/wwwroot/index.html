@@ -3,33 +3,44 @@
 <head>
     <title>Little Buddy Dashboard</title>
     <link rel="stylesheet" href="index.css">
+    <style>
+        .user-container {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .user-header {
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #f5f5f5;
+        }
+        .chart-container {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .chart {
+            flex: 1;
+            height: 300px;
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-header">
-        <div id="username-display">User: Not Connected</div>
+        <div id="active-users">Active Users: None</div>
     </div>
-    <div class="chart-container">
-        <div class="chart">
-            <canvas id="chart1"></canvas>
-        </div>
-        <div class="chart">
-            <canvas id="chart2"></canvas>
-        </div>
-        <div class="chart">
-            <canvas id="chart3"></canvas>
-        </div>
-    </div>
+    <div id="users-container"></div>
     <div id="messages"></div>
 
-    <!-- Include SignalR client library -->
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const userCharts = new Map();
+
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/hubs/payload/")
             .build();
-
-        
-        console.log("Connected!");
 
         connection.on("ReceivePayload", (payload) => {
             const messagesDiv = document.getElementById("messages");
@@ -40,29 +51,100 @@
 
             const payloadData = JSON.parse(payload);
             const buddyDevices = payloadData.map(device => BuddyDevice.fromJson(device));
-            // Update charts with the new data
+            
             buddyDevices.forEach(device => {
+                if (!userCharts.has(device.username)) {
+                    createUserContainer(device.username);
+                }
                 updateCharts(device);
-                updateUsernameDisplay(device.username);
+                updateActiveUsers();
             });
-
         });
 
-        function updateUsernameDisplay(username) {
-            const usernameElement = document.getElementById('username-display');
-            if (usernameElement) {
-                usernameElement.textContent = `User: ${username}`;
+        function createUserContainer(username) {
+            const usersContainer = document.getElementById('users-container');
+            
+            const userContainer = document.createElement('div');
+            userContainer.className = 'user-container';
+            userContainer.id = `user-${username}`;
+            
+            const userHeader = document.createElement('div');
+            userHeader.className = 'user-header';
+            userHeader.innerHTML = `User: ${username}`;
+            
+            const chartsContainer = document.createElement('div');
+            chartsContainer.className = 'chart-container';
+            
+            const chartConfigs = {};
+            for (let i = 1; i <= 3; i++) {
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart';
+                
+                const canvas = document.createElement('canvas');
+                canvas.id = `chart-${username}-${i}`;
+                chartDiv.appendChild(canvas);
+                chartsContainer.appendChild(chartDiv);
+                
+                const ctx = canvas.getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: `Sensor ${i} Readings`,
+                            data: [],
+                            borderWidth: 1,
+                            borderColor: '#36A2EB',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                
+                chartConfigs[i] = chart;
             }
+            
+            userContainer.appendChild(userHeader);
+            userContainer.appendChild(chartsContainer);
+            usersContainer.appendChild(userContainer);
+            
+            userCharts.set(username, chartConfigs);
         }
 
-        connection.start().catch(err => console.error(err.toString()));
-    </script>
+        function updateCharts(buddyDevice) {
+            const charts = userCharts.get(buddyDevice.username);
+            if (!charts) return;
 
-    
-    
-    <!-- Include Chart.js library -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
+            buddyDevice.sensors.forEach(sensor => {
+                const chart = charts[sensor.sensorId];
+                if (!chart) return;
+
+                const readings = sensor.getReadingHistory();
+                
+                chart.data.labels = readings.map(r => r.timestamp.toLocaleTimeString());
+                chart.data.datasets[0].data = readings.map(r => r.value);
+                chart.update();
+            });
+        }
+
+        function updateActiveUsers() {
+            const activeUsersElement = document.getElementById('active-users');
+            const userCount = userCharts.size;
+            activeUsersElement.textContent = `Active Users: ${userCount === 0 ? 'None' : Array.from(userCharts.keys()).join(', ')}`;
+        }
+
+        // Reading, Sensor, and BuddyDevice classes remain unchanged
         class Reading {
             constructor(timestamp, value) {
                 this.timestamp = new Date(timestamp);
@@ -73,6 +155,7 @@
                 return new Reading(json.Timestamp, json.Value);
             }
         }
+
         class Sensor {
             constructor(sensorId, readings = []) {
                 this.sensorId = sensorId;
@@ -103,8 +186,6 @@
                 this.username = username;
                 this.sensors = sensors;
             }
-
-
     
             static fromJson(json) {
                 const sensors = json.BuddyDevice.map(sensor => Sensor.fromJson(sensor));
@@ -122,59 +203,8 @@
                 }));
             }
         }
-    
-        function updateCharts(buddyDevice) {
-        const chartContexts = {
-            1: document.getElementById('chart1'),
-            2: document.getElementById('chart2'),
-            3: document.getElementById('chart3')
-        };
 
-      
-    
-        buddyDevice.sensors.forEach(sensor => {
-            const chartContext = chartContexts[sensor.sensorId];
-            if (!chartContext) return;
-    
-            const readings = sensor.getReadingHistory();
-            
-            // Update or create new chart
-            const chartData = {
-                labels: readings.map(r => r.timestamp.toLocaleTimeString()),
-                datasets: [{
-                    label: `Sensor ${sensor.sensorId} Readings`,
-                    data: readings.map(r => r.value),
-                    borderWidth: 1,
-                    borderColor: '#36A2EB',
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)'
-                }]
-            };
-    
-            const chartOptions = {
-                scales: {
-                    y: {
-                        beginAtZero: false
-                    }
-                },
-                animation: {
-                    duration: 0 // Disable animation for better performance
-                },
-                responsive: true,
-                maintainAspectRatio: false
-            };
-    
-            if (chartContext.chart) {
-                chartContext.chart.data = chartData;
-                chartContext.chart.update();
-            } else {
-                chartContext.chart = new Chart(chartContext.getContext('2d'), {
-                    type: 'line',
-                    data: chartData,
-                    options: chartOptions
-                });
-            }
-        });
-    }
+        connection.start().catch(err => console.error(err.toString()));
     </script>
 </body>
 </html>
