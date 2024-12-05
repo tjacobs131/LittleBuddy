@@ -1,24 +1,17 @@
-#include "Buzzer.h"
+#include <Arduino.h>
+#include "LoRaSender.h"
 
-Buzzer buzzer(26);  // Buzzer connected to pin 9
+LoRaSender loraSender;
 
 void setup() {
-    buzzer.begin();
-    buzzer.playHappyTone();  // Play a happy tone on startup
+    loraSender.init();
+
+    // Example payload to send
+    uint8_t data[5] = { 10, 20, 30, 40, 50 };
+    loraSender.send(data, sizeof(data));
 }
 
 void loop() {
-    // Example of how to play different tones based on some condition
-    buzzer.playWarningTone();  // Play a warning sound
-    delay(2000);  // Wait for 2 seconds
-    
-    buzzer.playErrorTone();  // Play an error sound
-    delay(3000);  // Wait for 3 seconds
-
-    buzzer.playHappyTone();  // Play a happy sound
-    delay(1000);  // Wait for 1 second
-
-    buzzer.playUnhappyTone();  // Play an unhappy sound
-    delay(2000);  // Wait for 2 seconds
-    
+    // Continuously run LMIC loop
+    loraSender.loop();
 }
