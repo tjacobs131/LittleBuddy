@@ -164,7 +164,6 @@ class BuddyRun
                     ref_myLora.lora.send(output_message, 27); //:TODO: check length
 
                     buddyState = SLEEP;
-
                     break;
             }
         }

@@ -180,5 +180,6 @@ void loop() {
     }
 
     mySensor.display.update();
+    myLora.lora.loop();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }
