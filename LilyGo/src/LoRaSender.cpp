@@ -68,6 +68,7 @@ void LoRaSender::send(uint8_t *data, uint8_t length) {
     }
     memcpy(payload, data, length);
     payloadLength = length;
+    do_send(&sendjob);
 }
 
 void LoRaSender::loop() {
