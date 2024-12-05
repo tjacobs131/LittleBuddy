@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Little Buddy Dashboard</title>
-    <link rel="stylesheet" href="index.css">
     <style>
         .user-container {
             margin: 20px 0;
@@ -17,11 +16,14 @@
         }
         .chart-container {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin: 10px 0;
         }
         .chart {
             flex: 1;
+            min-width: 300px;
+            max-width: 400px;
             height: 300px;
         }
     </style>
@@ -37,7 +39,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const userCharts = new Map();
-
+        
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/hubs/payload/")
             .build();
@@ -54,14 +56,14 @@
             
             buddyDevices.forEach(device => {
                 if (!userCharts.has(device.username)) {
-                    createUserContainer(device.username);
+                    createUserContainer(device.username, device.sensors.length);
                 }
                 updateCharts(device);
                 updateActiveUsers();
             });
         });
 
-        function createUserContainer(username) {
+        function createUserContainer(username, sensorCount) {
             const usersContainer = document.getElementById('users-container');
             
             const userContainer = document.createElement('div');
@@ -76,7 +78,8 @@
             chartsContainer.className = 'chart-container';
             
             const chartConfigs = {};
-            for (let i = 1; i <= 3; i++) {
+            // Create charts based on actual sensor count
+            for (let i = 1; i <= sensorCount; i++) {
                 const chartDiv = document.createElement('div');
                 chartDiv.className = 'chart';
                 
@@ -94,8 +97,8 @@
                             label: `Sensor ${i} Readings`,
                             data: [],
                             borderWidth: 1,
-                            borderColor: '#36A2EB',
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)'
+                            borderColor: `hsl(${(i * 60) % 360}, 70%, 50%)`, // Different color for each sensor
+                            backgroundColor: `hsla(${(i * 60) % 360}, 70%, 50%, 0.2)`
                         }]
                     },
                     options: {
@@ -123,15 +126,62 @@
         }
 
         function updateCharts(buddyDevice) {
-            const charts = userCharts.get(buddyDevice.username);
+            let charts = userCharts.get(buddyDevice.username);
             if (!charts) return;
+
+            // Check if we need to create new charts
+            const currentSensorCount = Object.keys(charts).length;
+            if (buddyDevice.sensors.length > currentSensorCount) {
+                const userContainer = document.getElementById(`user-${buddyDevice.username}`);
+                const chartsContainer = userContainer.querySelector('.chart-container');
+                
+                for (let i = currentSensorCount + 1; i <= buddyDevice.sensors.length; i++) {
+                    const chartDiv = document.createElement('div');
+                    chartDiv.className = 'chart';
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.id = `chart-${buddyDevice.username}-${i}`;
+                    chartDiv.appendChild(canvas);
+                    chartsContainer.appendChild(chartDiv);
+                    
+                    const ctx = canvas.getContext('2d');
+                    const chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: `Sensor ${i} Readings`,
+                                data: [],
+                                borderWidth: 1,
+                                borderColor: `hsl(${(i * 60) % 360}, 70%, 50%)`,
+                                backgroundColor: `hsla(${(i * 60) % 360}, 70%, 50%, 0.2)`
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: false
+                                }
+                            },
+                            animation: {
+                                duration: 0
+                            },
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                    
+                    charts[i] = chart;
+                }
+                
+                userCharts.set(buddyDevice.username, charts);
+            }
 
             buddyDevice.sensors.forEach(sensor => {
                 const chart = charts[sensor.sensorId];
                 if (!chart) return;
 
                 const readings = sensor.getReadingHistory();
-                
                 chart.data.labels = readings.map(r => r.timestamp.toLocaleTimeString());
                 chart.data.datasets[0].data = readings.map(r => r.value);
                 chart.update();
@@ -144,7 +194,7 @@
             activeUsersElement.textContent = `Active Users: ${userCount === 0 ? 'None' : Array.from(userCharts.keys()).join(', ')}`;
         }
 
-        // Reading, Sensor, and BuddyDevice classes remain unchanged
+        // Reading, Sensor, and BuddyDevice classes
         class Reading {
             constructor(timestamp, value) {
                 this.timestamp = new Date(timestamp);
