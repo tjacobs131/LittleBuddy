@@ -25,11 +25,13 @@ struct mainVar
 };
 mainVar mainvar;
 
+#include "LoginUser.h"
 struct UserData {
     // rfid data
     uint8_t uidBuffer[7];
     uint8_t uidLength;
     std::string userTag;
+    std::string userName;
 };
 UserData userdata;
 
@@ -100,6 +102,7 @@ void loop() {
                 }
             } else {
                 Serial.println("& No RFID tag in range.");
+                delay(1000);
             }
 
             break;
@@ -118,11 +121,13 @@ void loop() {
             mainvar.output_message_single = myLora.make_single_message_payload("RFID");
             myLora.lora.send(mainvar.output_message_single, 27); //:TODO: check length
 
-
-            delay(2000);
-            //if(message_received)                                  TODO:
-            mainvar.loginSuccess = true;
-
+            userdata.userName = check_user(userdata.userTag);
+            if (userdata.userName != "Not a User")
+            {
+                mainvar.loginSuccess = true;
+                mySensor.display.displayText("Succesfull",0, 20);
+                mySensor.display.displayText(userdata.userName.c_str(),0, 30);
+            }
 
             if (mainvar.loginSuccess) {
                 // Transition to little buddy sub-state machine
@@ -154,6 +159,7 @@ void loop() {
             
             mySensor.display.displayText("Short: Data",0, 20);
             mySensor.display.displayText("Long: Logout",0, 30);
+            mySensor.display.displayText(userdata.userName.c_str(),0, 40);
 
             if (pressType == SHORT_PRESS) {
                 //Serial.println("Knop kort ingedrukt!");
