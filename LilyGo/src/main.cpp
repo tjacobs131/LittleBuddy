@@ -6,6 +6,9 @@ MainState mainState = STANDBY;
 #include "SensorHandler.h"
 SensorHandler mySensor;
 
+#include "LoRaSender.h"
+LoRaSender loraSender;
+
 #include "LoraHandler.h"
 LoraHandler myLora;
 
@@ -29,6 +32,8 @@ struct UserData {
     std::string userTag;
 };
 UserData userdata;
+
+uint8_t datatest[5] = { 10, 20, 30, 40, 50 };
 
 void setup() {
     Serial.begin(115200);
@@ -144,9 +149,9 @@ void loop() {
             break;
 
         case RUNNING:
-            //Serial.println("State: RUNNING");
+            loraSender.send(datatest, sizeof(datatest));
             myBuddyrun.LittleBuddy();
-
+            
             mySensor.display.displayText("Short: Data",0, 20);
             mySensor.display.displayText("Long: Logout",0, 30);
 
@@ -173,13 +178,13 @@ void loop() {
 
             if (pressType == LONG_PRESS) {
                 //Serial.println("Knop lang ingedrukt!");
-                init();
+                setup();
                 mainState = STANDBY;
             }
             break;
     }
 
     mySensor.display.update();
-    myLora.lora.loop();
+    loraSender.loop();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }

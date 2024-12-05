@@ -103,9 +103,23 @@ void LoRaSender::onEvent(ev_t ev) {
             // Schedule next transmission in 60 seconds
             os_setTimedCallback(&sendjob, os_getTime() + sec2osticks(60), do_send);
             break;
+
+        case EV_RXCOMPLETE:
+            Serial.println(F("EV_RXCOMPLETE (Data Received)"));
+            if (LMIC.dataLen > 0) {
+                Serial.print(F("Received data: "));
+                for (int i = 0; i < LMIC.dataLen; i++) {
+                    Serial.print(LMIC.frame[LMIC.dataBeg + i], HEX);
+                    Serial.print(" ");
+                }
+                Serial.println();
+            }
+            break;
+
         case EV_TXSTART:
             Serial.println(F("EV_TXSTART"));
             break;
+
         default:
             Serial.print(F("Unknown event: "));
             Serial.println((unsigned)ev);
@@ -117,3 +131,4 @@ void LoRaSender::onEvent(ev_t ev) {
 void onEvent(ev_t ev) {
     LoRaSender::onEvent(ev);
 }
+    
