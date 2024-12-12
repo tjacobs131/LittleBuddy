@@ -1,31 +1,31 @@
 #include "Arduino.h"
 
 struct LoraMessage {
-    uint8_t sensorID_RFID = 0x00;
+    uint8_t sensorID_RFID = 0;
     uint8_t message_payload_RFID[3];
 
-    uint8_t sensorID_Temp_humid = 0x01;
+    uint8_t sensorID_Temp_humid = 1;
     uint8_t message_payload_Temp_humid[3];
 
-    uint8_t sensorID_Temp_degrees = 0x02;
+    uint8_t sensorID_Temp_degrees = 2;
     uint8_t message_payload_Temp_degrees[3];
 
-    uint8_t sensorID_Sound_db = 0x03;
+    uint8_t sensorID_Sound_db = 3;
     uint8_t message_payload_Sound_db[3];
 
-    uint8_t sensorID_Gas_ppb = 0x04;
+    uint8_t sensorID_Gas_ppb = 4;
     uint8_t message_payload_Gas_ppb[3];
     
-    uint8_t sensorID_Gas_SO2 = 0x05;
+    uint8_t sensorID_Gas_SO2 = 5;
     uint8_t message_payload_Gas_SO2[3];
     
-    uint8_t sensorID_Gas_NO2 = 0x06;
+    uint8_t sensorID_Gas_NO2 = 6;
     uint8_t message_payload_Gas_NO2[3];
     
-    uint8_t sensorID_Gas_NO = 0x07;
+    uint8_t sensorID_Gas_NO = 7;
     uint8_t message_payload_Gas_NO[3];
     
-    uint8_t sensorID_Gas_C6H6 = 0x08;
+    uint8_t sensorID_Gas_C6H6 = 8;
     uint8_t message_payload_Gas_C6H6[3];
 
     uint8_t message_total_payload[(9*3)]; // num_sensors * 3
@@ -45,11 +45,18 @@ class LoraHandler {
 };
 
 void LoraHandler::splitDataToPayload(uint32_t data, uint8_t* payload) {
+
+    uint8_t rest = data%255;
+    uint8_t geheel = (data-rest)/255;
+    payload[1] = geheel;
+    payload[2] = rest;
+    /*
     // Verdeelt de data over de payload met een maximum van 0xFF per positie
     for (int i = 2; i >= 0; --i) {
-        payload[i] = (data > 0xFF) ? 0xFF : data;
-        data = (data > 0xFF) ? data - 0xFF : 0;
+        payload[i] = (data) ? 255 : data;
+        data = (data > 255) ? data - 255 : 0;
     }
+    */
 };
 
 void LoraHandler::saveData(uint32_t data, std::string DataType) {
