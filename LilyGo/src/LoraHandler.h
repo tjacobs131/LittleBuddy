@@ -44,39 +44,41 @@ class LoraHandler {
         void splitDataToPayload(uint32_t data, uint8_t* payload);
 };
 
-void LoraHandler::splitDataToPayload(uint32_t data, uint8_t* payload) {
-
-    uint8_t rest = data%255;
-    uint8_t geheel = (data-rest)/255;
+void LoraHandler::splitDataToPayload(uint32_t data, uint8_t* payload) 
+{
+    uint32_t rest = data%255;
+    uint32_t geheel = (data-rest)/255;
     payload[1] = geheel;
     payload[2] = rest;
-    /*
-    // Verdeelt de data over de payload met een maximum van 0xFF per positie
-    for (int i = 2; i >= 0; --i) {
-        payload[i] = (data) ? 255 : data;
-        data = (data > 255) ? data - 255 : 0;
-    }
-    */
 };
 
 void LoraHandler::saveData(uint32_t data, std::string DataType) {
     if (DataType == "RFID") {
+        loraMessage.message_payload_RFID[0] = loraMessage.sensorID_RFID;
         splitDataToPayload(data, loraMessage.message_payload_RFID);
     } else if (DataType == "Temp_humid") {
+        loraMessage.message_payload_Temp_humid[0] = loraMessage.sensorID_Temp_humid;
         splitDataToPayload(data, loraMessage.message_payload_Temp_humid);
     } else if (DataType == "Temp_degrees") {
+        loraMessage.message_payload_Temp_degrees[0] = loraMessage.sensorID_Temp_degrees;
         splitDataToPayload(data, loraMessage.message_payload_Temp_degrees);
     } else if (DataType == "Sound_db") {
+        loraMessage.message_payload_Sound_db[0] = loraMessage.sensorID_Sound_db;
         splitDataToPayload(data, loraMessage.message_payload_Sound_db);
     } else if (DataType == "Gas_ppb") {
+        loraMessage.message_payload_Gas_ppb[0] = loraMessage.sensorID_Gas_ppb;
         splitDataToPayload(data, loraMessage.message_payload_Gas_ppb);
     } else if (DataType == "Gas_SO2") {
+        loraMessage.message_payload_Gas_SO2[0] = loraMessage.sensorID_Gas_SO2;
         splitDataToPayload(data, loraMessage.message_payload_Gas_SO2);
     } else if (DataType == "Gas_NO2") {
+        loraMessage.message_payload_Gas_NO2[0] = loraMessage.sensorID_Gas_NO2;
         splitDataToPayload(data, loraMessage.message_payload_Gas_NO2);
     } else if (DataType == "Gas_NO") {
+        loraMessage.message_payload_Gas_NO[0] = loraMessage.sensorID_Gas_NO;
         splitDataToPayload(data, loraMessage.message_payload_Gas_NO);
     } else if (DataType == "Gas_C6H6") {
+        loraMessage.message_payload_Gas_C6H6[0] = loraMessage.sensorID_Gas_C6H6;
         splitDataToPayload(data, loraMessage.message_payload_Gas_C6H6);
     } else {
         // Ongeldig datatype
