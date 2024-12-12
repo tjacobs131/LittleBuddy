@@ -1,5 +1,4 @@
 #include "Arduino.h"
-#include "LoRaSender.h"
 
 struct LoraMessage {
     uint8_t sensorID_RFID = 0x00;
@@ -35,7 +34,6 @@ struct LoraMessage {
 
 class LoraHandler {
     public:
-        LoRaSender lora;
         LoraMessage loraMessage;
 
         void saveData(uint32_t data, std::string DataType);
@@ -52,7 +50,7 @@ void LoraHandler::splitDataToPayload(uint32_t data, uint8_t* payload) {
         payload[i] = (data > 0xFF) ? 0xFF : data;
         data = (data > 0xFF) ? data - 0xFF : 0;
     }
-}
+};
 
 void LoraHandler::saveData(uint32_t data, std::string DataType) {
     if (DataType == "RFID") {
@@ -76,7 +74,7 @@ void LoraHandler::saveData(uint32_t data, std::string DataType) {
     } else {
         // Ongeldig datatype
     }
-}
+};
 
 void LoraHandler::make_single_message_payload(std::string DataType) {
     uint8_t* source_payload = nullptr;
@@ -114,7 +112,7 @@ void LoraHandler::make_single_message_payload(std::string DataType) {
     loraMessage.message_single_payload[0] = sensorID;
     loraMessage.message_single_payload[1] = source_payload[1];
     loraMessage.message_single_payload[2] = source_payload[2];
-}
+};
 
 void LoraHandler::make_total_message_payload(void) {
     int offset = 0;
@@ -145,4 +143,4 @@ void LoraHandler::make_total_message_payload(void) {
 
     memcpy(&loraMessage.message_total_payload[offset], loraMessage.message_payload_Gas_C6H6, 3);
     offset += 3;
-}
+};

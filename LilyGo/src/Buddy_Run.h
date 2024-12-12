@@ -30,13 +30,15 @@ class BuddyRun
         TimerDriver timer1;
 
         SensorHandler& ref_mySensor;
-        LoraHandler& ref_myLora;
+        LoraHandler& ref_myData;
 
         BuddyState buddyState = SLEEP;
 
         bool once;
 
-        BuddyRun(SensorHandler&  in_SensorHandler,LoraHandler& in_LoraHandler) : ref_mySensor(in_SensorHandler), ref_myLora(in_LoraHandler)
+        BuddyRun(SensorHandler& in_SensorHandler, LoraHandler& in_myData) : 
+            ref_mySensor(in_SensorHandler), 
+            ref_myData(in_myData)
         {};
 
         void init()
@@ -77,27 +79,27 @@ class BuddyRun
                     // geluid sensor
                     Serial.println("& Gettting Sound data");
                     sensordata.decibels = ref_mySensor.micSensor.readMicDecibels();
-                        ref_myLora.saveData(sensordata.decibels,"Sound_db");
+                        ref_myData.saveData(sensordata.decibels,"Sound_db");
 
                     // temp sensor
                     Serial.println("& Gettting Temp data");
                     sensordata.humidity = ref_mySensor.dhtSensor.readHumidity();
-                        ref_myLora.saveData(sensordata.humidity,"Temp_humid");
+                        ref_myData.saveData(sensordata.humidity,"Temp_humid");
                     sensordata.temperature = ref_mySensor.dhtSensor.readTemperature();
-                        ref_myLora.saveData(sensordata.temperature,"Temp_degrees");
+                        ref_myData.saveData(sensordata.temperature,"Temp_degrees");
 
                     // gas sensor
                     Serial.println("& Gettting Gas data");
                     // sensordata.ppb = ref_mySensor.GasSensor.readPPB();
-                    ref_myLora.saveData(sensordata.ppb,"Gas_ppb");
+                    ref_myData.saveData(sensordata.ppb,"Gas_ppb");
                     // sensordata.SO2_concentration = ref_mySensor.GasSensor.getGasConcentration("SO2");
-                    ref_myLora.saveData(sensordata.SO2_concentration,"Gas_SO2"); 
+                    ref_myData.saveData(sensordata.SO2_concentration,"Gas_SO2"); 
                     // sensordata.NO2_concentration = ref_mySensor.GasSensor.getGasConcentration("NO2"); 
-                    ref_myLora.saveData(sensordata.NO2_concentration,"Gas_NO2");
+                    ref_myData.saveData(sensordata.NO2_concentration,"Gas_NO2");
                     // sensordata.NO__concentration = ref_mySensor.GasSensor.getGasConcentration("NO"); 
-                    ref_myLora.saveData(sensordata.NO__concentration,"Gas_NO");
+                    ref_myData.saveData(sensordata.NO__concentration,"Gas_NO");
                     // sensordata.C6H6_concentration = ref_mySensor.GasSensor.getGasConcentration("C6H6");
-                    ref_myLora.saveData(sensordata.C6H6_concentration,"Gas_C6H6");
+                    ref_myData.saveData(sensordata.C6H6_concentration,"Gas_C6H6");
 
                     buddyState = UPDATE_DISPLAY;
                     
@@ -159,10 +161,7 @@ class BuddyRun
                     Serial.print(sensordata.CO_concentration); Serial.print(" , ");
                     Serial.println( sensordata.C6H6_concentration);
 
-                    ref_myLora.make_total_message_payload();
-
-                    ref_myLora.lora.send(ref_myLora.loraMessage.message_total_payload, sizeof(ref_myLora.loraMessage.message_total_payload)); //:TODO: check length
-
+                    ref_myData.make_total_message_payload();
                     buddyState = SLEEP;
                     break;
             }

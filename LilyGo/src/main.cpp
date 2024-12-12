@@ -7,10 +7,13 @@ MainState mainState = STANDBY;
 SensorHandler mySensor;
 
 #include "LoraHandler.h"
-LoraHandler myLora;
+LoraHandler myData;
+
+#include "LoRaSender.h"
+LoRaSender myLoraSender;
 
 #include "Buddy_Run.h"
-BuddyRun myBuddyrun(mySensor,myLora);
+BuddyRun myBuddyrun(mySensor,myData);
 
 struct mainVar
 {
@@ -33,14 +36,14 @@ void setup() {
     Serial.println("Starting code");
 
     mySensor.init();
-    myLora.lora.init();
+    myLoraSender.init();
     myBuddyrun.init();
 
     mySensor.display.clear();
     mySensor.display.displayText("Setup: complete",0, 10);
     mySensor.display.update();
 
-    mySensor.buzzer.playHappyTone();
+    // mySensor.buzzer.playHappyTone();
     delay(2000);
 
 }
@@ -84,7 +87,7 @@ void loop() {
 
                     // Print the UID string
                     Serial.println(userdata.userTag.c_str());
-                    myLora.saveData(1,"RFID");
+                    //myData.saveData(1,"RFID");
 
 
                     mainState = LOGIN;
@@ -108,8 +111,8 @@ void loop() {
             mySensor.display.displayText("State: Login",0, 10);
 
             // message verzenden
-            myLora.make_single_message_payload("RFID");
-            myLora.lora.send(myLora.loraMessage.message_single_payload,sizeof(myLora.loraMessage.message_single_payload)); //:TODO: check length
+            myData.make_single_message_payload("RFID");
+            myLoraSender.send(myData.loraMessage.message_single_payload,sizeof(myData.loraMessage.message_single_payload)); //:TODO: check length
 
             delay(2000);
             //if(message_received)                                  TODO:
@@ -142,7 +145,9 @@ void loop() {
 
         case RUNNING:
             myBuddyrun.LittleBuddy();
-            
+
+            myLoraSender.send(myData.loraMessage.message_total_payload, sizeof(myData.loraMessage.message_total_payload)); //:TODO: check length
+
             mySensor.display.displayText("Short: Data",0, 20);
             mySensor.display.displayText("Long: Logout",0, 30);
 
@@ -176,6 +181,6 @@ void loop() {
     }
 
     mySensor.display.update();
-    myLora.lora.loop();
+    myLoraSender.loop();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }
