@@ -6,9 +6,6 @@ MainState mainState = STANDBY;
 #include "SensorHandler.h"
 SensorHandler mySensor;
 
-#include "LoRaSender.h"
-LoRaSender loraSender;
-
 #include "LoraHandler.h"
 LoraHandler myLora;
 
@@ -20,8 +17,6 @@ struct mainVar
     bool loginSuccess = false;
     bool logoutRequest = false;
     bool sendDataSuccess = false;
-
-    uint8_t* output_message_single;
 };
 mainVar mainvar;
 
@@ -32,8 +27,6 @@ struct UserData {
     std::string userTag;
 };
 UserData userdata;
-
-uint8_t datatest[5] = { 10, 20, 30, 40, 50 };
 
 void setup() {
     Serial.begin(115200);
@@ -91,7 +84,7 @@ void loop() {
 
                     // Print the UID string
                     Serial.println(userdata.userTag.c_str());
-                    myLora.saveData(0,255,"RFID");
+                    myLora.saveData(1,"RFID");
 
 
                     mainState = LOGIN;
@@ -115,9 +108,8 @@ void loop() {
             mySensor.display.displayText("State: Login",0, 10);
 
             // message verzenden
-            mainvar.output_message_single = myLora.make_single_message_payload("RFID");
-            myLora.lora.send(mainvar.output_message_single, 27); //:TODO: check length
-
+            myLora.make_single_message_payload("RFID");
+            myLora.lora.send(myLora.loraMessage.message_single_payload,sizeof(myLora.loraMessage.message_single_payload)); //:TODO: check length
 
             delay(2000);
             //if(message_received)                                  TODO:
@@ -149,7 +141,6 @@ void loop() {
             break;
 
         case RUNNING:
-            loraSender.send(datatest, sizeof(datatest));
             myBuddyrun.LittleBuddy();
             
             mySensor.display.displayText("Short: Data",0, 20);
@@ -185,6 +176,6 @@ void loop() {
     }
 
     mySensor.display.update();
-    loraSender.loop();
+    myLora.lora.loop();
     delay(10); // Kleine vertraging om de belasting te verminderen
 }
