@@ -41,13 +41,14 @@ void setup() {
 
     mySensor.init();
     myLora.lora.init();
+    loraSender.init();
     myBuddyrun.init();
 
     mySensor.display.clear();
     mySensor.display.displayText("Setup: complete",0, 10);
     mySensor.display.update();
 
-    mySensor.buzzer.playHappyTone();
+    // mySensor.buzzer.playHappyTone();
     delay(2000);
 
 }
@@ -149,9 +150,9 @@ void loop() {
             break;
 
         case RUNNING:
-            loraSender.send(datatest, sizeof(datatest));
             myBuddyrun.LittleBuddy();
-            
+            loraSender.send(datatest, sizeof(datatest));
+
             mySensor.display.displayText("Short: Data",0, 20);
             mySensor.display.displayText("Long: Logout",0, 30);
 
