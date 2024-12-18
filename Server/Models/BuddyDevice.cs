@@ -1,3 +1,6 @@
+// ### This class is not used ###
+
+
 public class BuddyDevice
 {
     public Dictionary<int, List<BuddySensorReading>> SensorReadings { get; set; }

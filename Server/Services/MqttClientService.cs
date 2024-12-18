@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace TTNMqttWebApi.Services
 {
+    #region  Internal classes for payload processing
     internal class Payload
     {
         public required UplinkMessage uplink_message { get; set; }
@@ -24,28 +25,33 @@ namespace TTNMqttWebApi.Services
     {
         public required string device_id { get; set; }
     }
+    #endregion
 
     public class MqttClientService : BackgroundService
     {
+        // TTN app configuration
         private readonly IConfiguration _configuration;
         private readonly string brokerAddress;
         private readonly string appId;
         private readonly string apiKey;
-        private readonly IHubContext<BudHub> _hubContext;
 
+        // SignalR hub
+        private readonly IHubContext<BudHub> _hubContext;
 
         private IMqttClient? mqttClient;
         private MqttClientOptions? options;
 
-        //private readonly BuddyDataStore buddyDataStore;
-        BuddyGroup previousBuddyGroup = new BuddyGroup();
+        BuddyGroup previousBuddyGroup = new BuddyGroup(); // For memory persistence
 
-        public MqttClientService(IConfiguration configuration, IHubContext<BudHub> hubContext)
+        private readonly BuddyDataStore buddyDataStore;
+
+        public MqttClientService(BuddyDataStore buddyDataStore, IConfiguration configuration, IHubContext<BudHub> hubContext)
         {
+            this.buddyDataStore = buddyDataStore;
             _configuration = configuration;
             _hubContext = hubContext;
 
-            // Read settings from configuration
+            // Read TTN connection settings from configuration
             brokerAddress = _configuration["TTN:BrokerAddress"]!;
             appId = _configuration["TTN:AppId"]!;
             apiKey = _configuration["TTN:ApiKey"]!;
@@ -98,7 +104,7 @@ namespace TTNMqttWebApi.Services
                     return Task.CompletedTask;
                 }
 
-                // Isolate the payload
+                // Isolate the ESP32's payload
                 byte[] payloadBytes;
                 payloadBytes = Convert.FromBase64String(readablePayload.uplink_message.frm_payload);
 
@@ -109,11 +115,8 @@ namespace TTNMqttWebApi.Services
                     return Task.CompletedTask;
                 }
                 
-                // Retrieve or create BuddyReading
-              
-                string deviceID = readablePayload.end_device_ids.device_id;
-                //BuddyDevice buddyDevice;
-             
+                // string deviceID = readablePayload.end_device_ids.device_id;
+                // BuddyDevice buddyDevice;
 
                 // try {
                 //     buddyDevice = previousBuddyGroup.GetBuddyDevice(deviceID);
@@ -122,18 +125,16 @@ namespace TTNMqttWebApi.Services
                 //     Console.WriteLine($"### REGISTERING NEW DEVICE: {deviceID} ###");
                 //     buddyDevice = new BuddyDevice();
                 // }
-
-                string username = "";                
                 
                 // Process the payload in 3 byte chunks
+                string username = "";
                 for (int i = 0; i < payloadBytes.Length; i += 3)
                 {
                     int sensorID = payloadBytes[i];
-                    int value = (payloadBytes[i + 1] << 8) | payloadBytes[i+2]; // The sensor's reading is represented in the last two bytes
-
+                    int value = (payloadBytes[i + 1] << 8) | payloadBytes[i + 2]; // The sensor's reading is represented in the last two bytes
                     
                     if (sensorID == 0){ // RFID sensor code, we are setting the username
-                        switch(value){
+                        switch(value) {
                             case 0:
                                 username = "Koen van Wijlick";
                                 break;
@@ -150,36 +151,31 @@ namespace TTNMqttWebApi.Services
                                 username = "Buddy";
                                 break;
                         }
-                        Console.WriteLine($"### {deviceID} now belongs to {username} ###");
-                        // buddyDevice.RegisterNewUser(username);
-                        //previousBuddyGroup.AddBuddyDevice(username, buddyDevice);
+                        Console.WriteLine($"### {username} is now a registered user ###");
+
                         previousBuddyGroup.AddUser(username);
+
+                        // buddyDevice.RegisterNewUser(username);
+                        // previousBuddyGroup.AddBuddyDevice(username, buddyDevice);
+
                         continue;
                     }
                     
-                    // Create SensorReading
+                    // Create SensorReading new sensor reading
                     BuddySensorReading sensorReading = new BuddySensorReading(value, readablePayload.received_at);
-                    
-                    
 
-                   
-
-                    // Add the sensorReading to BuddyReading
-                    //buddyDevice.AddSensorReading(sensorID, sensorReading);
+                    // 
                     UserCreation user = previousBuddyGroup.GetUser(username);
-
-                    
+                    // buddyDevice.AddSensorReading(sensorID, sensorReading);
 
                     user.AddSensorValue(sensorID, sensorReading);
-
                     // previousBuddyGroup.AddBuddyDevice(username, buddyDevice);
-                    
                 }
 
-                //buddyDataStore.UpdateReading(previousBuddyGroup);
+                // Update the reading for use when opening the page the first time
+                buddyDataStore.UpdateReading(previousBuddyGroup);
 
                 // Send all readings after processing
-                
                 _ = SendSensorReadings();
 
                 return Task.CompletedTask;

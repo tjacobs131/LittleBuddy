@@ -19,6 +19,7 @@ public class BuddyGroup
     // {
     //     BuddyDevices[userName] = device;
     // }
+    
     public void AddUser(string UserName)
     {
         if (!Users.ContainsKey(UserName))
