@@ -1,16 +1,16 @@
 public class BuddyDevice
 {
     public Dictionary<int, List<BuddySensorReading>> SensorReadings { get; set; }
-    public string DeviceName { get; set; } = "Buddy";
-
+    public string UserName { get; set; } = "Buddy";
+   
     public BuddyDevice()
     {
         SensorReadings = new Dictionary<int, List<BuddySensorReading>>();
     }
 
-    public void RegisterDeviceName(string deviceName)
+    public void RegisterNewUser(string userName)
     {
-        DeviceName = deviceName;
+        UserName = userName;
     }
 
     public void AddSensorReading(int sensorId, BuddySensorReading reading)

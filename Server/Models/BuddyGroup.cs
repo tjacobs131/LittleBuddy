@@ -12,9 +12,9 @@ public class BuddyGroup
         return BuddyDevices.ContainsKey(deviceId) ? BuddyDevices[deviceId] : throw new KeyNotFoundException();
     }
 
-    public void AddBuddyDevice(string deviceId, BuddyDevice device)
+    public void AddBuddyDevice(string userName, BuddyDevice device)
     {
-        BuddyDevices[deviceId] = device;
+        BuddyDevices[userName] = device;
     }
 
     public string ToJson()
@@ -28,7 +28,7 @@ public class BuddyGroup
         {
             var deviceId = kvp.Key;
             var buddyDevice = kvp.Value;
-            var buddyName = kvp.Value.DeviceName;
+            var buddyName = kvp.Value.UserName;
             var readingsJson = buddyDevice.ToJson();
 
             return $"{{\"DeviceID\":\"{deviceId}\",\"Username\":\"{buddyName}\",\"BuddyDevice\":{readingsJson}}}";

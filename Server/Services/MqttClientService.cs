@@ -146,8 +146,8 @@ namespace TTNMqttWebApi.Services
                                 break;
                         }
                         Console.WriteLine($"### {deviceID} now belongs to {username} ###");
-                        buddyDevice.RegisterDeviceName(username);
-                        previousBuddyGroup.AddBuddyDevice(deviceID, buddyDevice);
+                        buddyDevice.RegisterNewUser(username);
+                        previousBuddyGroup.AddBuddyDevice(username, buddyDevice);
                         continue;
                     }
 
@@ -159,6 +159,8 @@ namespace TTNMqttWebApi.Services
 
                     previousBuddyGroup.AddBuddyDevice(deviceID, buddyDevice);
                 }
+
+                buddyDataStore.UpdateReading(previousBuddyGroup);
 
                 // Send all readings after processing
                 _ = SendSensorReadings();
