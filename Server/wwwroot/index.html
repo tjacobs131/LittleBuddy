@@ -5,26 +5,30 @@
     <style>
         .user-container {
             margin: 20px 0;
-            padding: 10px;
+            padding: 20px;
             border: 1px solid #ddd;
             border-radius: 8px;
+            background-color: #fff;
         }
         .user-header {
-            margin-bottom: 10px;
-            padding: 5px;
+            margin-bottom: 20px;
+            padding: 10px;
             background-color: #f5f5f5;
+            border-radius: 4px;
+            font-weight: bold;
         }
         .chart-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
             margin: 10px 0;
         }
         .chart {
-            flex: 1;
-            min-width: 300px;
-            max-width: 400px;
             height: 300px;
+            background-color: #fff;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -33,7 +37,6 @@
         <div id="active-users">Active Users: None</div>
     </div>
     <div id="users-container"></div>
-    <div id="messages"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -45,25 +48,25 @@
             .build();
 
         connection.on("ReceivePayload", (payload) => {
-            const messagesDiv = document.getElementById("messages");
-            const messageElement = document.createElement("div");
-            messageElement.textContent = `${payload}`;
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.appendChild(document.createElement("br"));
-
-            const payloadData = JSON.parse(payload);
-            const buddyDevices = payloadData.map(device => BuddyDevice.fromJson(device));
-            
-            buddyDevices.forEach(device => {
-                if (!userCharts.has(device.username)) {
-                    createUserContainer(device.username, device.sensors.length);
-                }
-                updateCharts(device);
+            try {
+                const payloadData = typeof payload === 'string' ? JSON.parse(payload) : payload;
+                
+                // Clear existing containers if needed
+                payloadData.forEach(userData => {
+                    const username = userData.Username;
+                    if (!userCharts.has(username)) {
+                        createUserContainer(username, userData.Sensors);
+                    }
+                    updateCharts(username, userData.Sensors);
+                });
+                
                 updateActiveUsers();
-            });
+            } catch (error) {
+                console.error('Error processing payload:', error);
+            }
         });
 
-        function createUserContainer(username, sensorCount) {
+        function createUserContainer(username, sensors) {
             const usersContainer = document.getElementById('users-container');
             
             const userContainer = document.createElement('div');
@@ -72,19 +75,19 @@
             
             const userHeader = document.createElement('div');
             userHeader.className = 'user-header';
-            userHeader.innerHTML = `User: ${username}`;
+            userHeader.textContent = `User: ${username}`;
             
             const chartsContainer = document.createElement('div');
             chartsContainer.className = 'chart-container';
             
             const chartConfigs = {};
-            // Create charts based on actual sensor count
-            for (let i = 1; i <= sensorCount; i++) {
+            
+            sensors.forEach(sensor => {
                 const chartDiv = document.createElement('div');
                 chartDiv.className = 'chart';
                 
                 const canvas = document.createElement('canvas');
-                canvas.id = `chart-${username}-${i}`;
+                canvas.id = `chart-${username}-${sensor.SensorID}`;
                 chartDiv.appendChild(canvas);
                 chartsContainer.appendChild(chartDiv);
                 
@@ -94,29 +97,46 @@
                     data: {
                         labels: [],
                         datasets: [{
-                            label: `Sensor ${i} Readings`,
+                            label: `Sensor ${sensor.SensorID} Readings`,
                             data: [],
-                            borderWidth: 1,
-                            borderColor: `hsl(${(i * 60) % 360}, 70%, 50%)`, // Different color for each sensor
-                            backgroundColor: `hsla(${(i * 60) % 360}, 70%, 50%, 0.2)`
+                            borderWidth: 2,
+                            borderColor: `hsl(${(sensor.SensorID * 120) % 360}, 70%, 50%)`,
+                            backgroundColor: `hsla(${(sensor.SensorID * 120) % 360}, 70%, 50%, 0.1)`,
+                            tension: 0.4
                         }]
                     },
                     options: {
-                        scales: {
-                            y: {
-                                beginAtZero: false
-                            }
-                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
                         animation: {
                             duration: 0
                         },
-                        responsive: true,
-                        maintainAspectRatio: false
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
                     }
                 });
                 
-                chartConfigs[i] = chart;
-            }
+                chartConfigs[sensor.SensorID] = chart;
+            });
             
             userContainer.appendChild(userHeader);
             userContainer.appendChild(chartsContainer);
@@ -125,65 +145,17 @@
             userCharts.set(username, chartConfigs);
         }
 
-        function updateCharts(buddyDevice) {
-            let charts = userCharts.get(buddyDevice.username);
+        function updateCharts(username, sensors) {
+            const charts = userCharts.get(username);
             if (!charts) return;
 
-            // Check if we need to create new charts
-            const currentSensorCount = Object.keys(charts).length;
-            if (buddyDevice.sensors.length > currentSensorCount) {
-                const userContainer = document.getElementById(`user-${buddyDevice.username}`);
-                const chartsContainer = userContainer.querySelector('.chart-container');
-                
-                for (let i = currentSensorCount + 1; i <= buddyDevice.sensors.length; i++) {
-                    const chartDiv = document.createElement('div');
-                    chartDiv.className = 'chart';
-                    
-                    const canvas = document.createElement('canvas');
-                    canvas.id = `chart-${buddyDevice.username}-${i}`;
-                    chartDiv.appendChild(canvas);
-                    chartsContainer.appendChild(chartDiv);
-                    
-                    const ctx = canvas.getContext('2d');
-                    const chart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: [],
-                            datasets: [{
-                                label: `Sensor ${i} Readings`,
-                                data: [],
-                                borderWidth: 1,
-                                borderColor: `hsl(${(i * 60) % 360}, 70%, 50%)`,
-                                backgroundColor: `hsla(${(i * 60) % 360}, 70%, 50%, 0.2)`
-                            }]
-                        },
-                        options: {
-                            scales: {
-                                y: {
-                                    beginAtZero: false
-                                }
-                            },
-                            animation: {
-                                duration: 0
-                            },
-                            responsive: true,
-                            maintainAspectRatio: false
-                        }
-                    });
-                    
-                    charts[i] = chart;
-                }
-                
-                userCharts.set(buddyDevice.username, charts);
-            }
-
-            buddyDevice.sensors.forEach(sensor => {
-                const chart = charts[sensor.sensorId];
+            sensors.forEach(sensor => {
+                const chart = charts[sensor.SensorID];
                 if (!chart) return;
 
-                const readings = sensor.getReadingHistory();
-                chart.data.labels = readings.map(r => r.timestamp.toLocaleTimeString());
-                chart.data.datasets[0].data = readings.map(r => r.value);
+                const readings = sensor.Readings;
+                chart.data.labels = readings.map(r => new Date(r.Timestamp).toLocaleTimeString());
+                chart.data.datasets[0].data = readings.map(r => r.Value);
                 chart.update();
             });
         }
@@ -192,66 +164,6 @@
             const activeUsersElement = document.getElementById('active-users');
             const userCount = userCharts.size;
             activeUsersElement.textContent = `Active Users: ${userCount === 0 ? 'None' : Array.from(userCharts.keys()).join(', ')}`;
-        }
-
-        // Reading, Sensor, and BuddyDevice classes
-        class Reading {
-            constructor(timestamp, value) {
-                this.timestamp = new Date(timestamp);
-                this.value = value;
-            }
-    
-            static fromJson(json) {
-                return new Reading(json.Timestamp, json.Value);
-            }
-        }
-
-        class Sensor {
-            constructor(sensorId, readings = []) {
-                this.sensorId = sensorId;
-                this.readings = readings;
-            }
-    
-            static fromJson(json) {
-                const readings = json.Readings.map(reading => Reading.fromJson(reading));
-                return new Sensor(json.SensorID, readings);
-            }
-    
-            getLatestReading() {
-                if (this.readings.length === 0) return null;
-                return this.readings[this.readings.length - 1];
-            }
-    
-            getReadingHistory() {
-                return this.readings.map(reading => ({
-                    timestamp: reading.timestamp,
-                    value: reading.value
-                }));
-            }
-        }
-    
-        class BuddyDevice {
-            constructor(deviceId, username, sensors = []) {
-                this.deviceId = deviceId;
-                this.username = username;
-                this.sensors = sensors;
-            }
-    
-            static fromJson(json) {
-                const sensors = json.BuddyDevice.map(sensor => Sensor.fromJson(sensor));
-                return new BuddyDevice(json.DeviceID, json.Username, sensors);
-            }
-    
-            getSensorById(id) {
-                return this.sensors.find(sensor => sensor.sensorId === id);
-            }
-    
-            getAllSensorsLatestReadings() {
-                return this.sensors.map(sensor => ({
-                    sensorId: sensor.sensorId,
-                    reading: sensor.getLatestReading()
-                }));
-            }
         }
 
         connection.start().catch(err => console.error(err.toString()));
