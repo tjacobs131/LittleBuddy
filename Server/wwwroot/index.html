@@ -2,35 +2,7 @@
 <html>
 <head>
     <title>Little Buddy Dashboard</title>
-    <style>
-        .user-container {
-            margin: 20px 0;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #fff;
-        }
-        .user-header {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        .chart-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin: 10px 0;
-        }
-        .chart {
-            height: 300px;
-            background-color: #fff;
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-        }
-    </style>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
     <div class="dashboard-header">
@@ -38,11 +10,12 @@
     </div>
     <div id="users-container"></div>
 
+    <!-- Include SignalR and Chart.js libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const userCharts = new Map();
-        
+
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/hubs/payload/")
             .build();
@@ -50,106 +23,101 @@
         connection.on("ReceivePayload", (payload) => {
             try {
                 const payloadData = typeof payload === 'string' ? JSON.parse(payload) : payload;
-                
-                // Clear existing containers if needed
                 payloadData.forEach(userData => {
                     const username = userData.Username;
+                    const sensors = userData.Sensors;
+
                     if (!userCharts.has(username)) {
-                        createUserContainer(username, userData.Sensors);
+                        createUserContainer(username);
                     }
-                    updateCharts(username, userData.Sensors);
+                    updateCharts(username, sensors);
                 });
-                
                 updateActiveUsers();
             } catch (error) {
                 console.error('Error processing payload:', error);
             }
         });
 
-        function createUserContainer(username, sensors) {
+        function createUserContainer(username) {
             const usersContainer = document.getElementById('users-container');
-            
             const userContainer = document.createElement('div');
             userContainer.className = 'user-container';
             userContainer.id = `user-${username}`;
-            
+
             const userHeader = document.createElement('div');
             userHeader.className = 'user-header';
             userHeader.textContent = `User: ${username}`;
-            
+
             const chartsContainer = document.createElement('div');
             chartsContainer.className = 'chart-container';
-            
-            const chartConfigs = {};
-            
-            sensors.forEach(sensor => {
-                const chartDiv = document.createElement('div');
-                chartDiv.className = 'chart';
-                
-                const canvas = document.createElement('canvas');
-                canvas.id = `chart-${username}-${sensor.SensorID}`;
-                chartDiv.appendChild(canvas);
-                chartsContainer.appendChild(chartDiv);
-                
-                const ctx = canvas.getContext('2d');
-                const chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: `Sensor ${sensor.SensorID} Readings`,
-                            data: [],
-                            borderWidth: 2,
-                            borderColor: `hsl(${(sensor.SensorID * 120) % 360}, 70%, 50%)`,
-                            backgroundColor: `hsla(${(sensor.SensorID * 120) % 360}, 70%, 50%, 0.1)`,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: {
-                            duration: 0
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value.toLocaleString();
-                                    }
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                chartConfigs[sensor.SensorID] = chart;
-            });
-            
             userContainer.appendChild(userHeader);
             userContainer.appendChild(chartsContainer);
             usersContainer.appendChild(userContainer);
-            
-            userCharts.set(username, chartConfigs);
+
+            userCharts.set(username, {
+                container: chartsContainer,
+                charts: {}
+            });
+        }
+
+        function addSensorChart(username, sensor) {
+            const { container, charts } = userCharts.get(username);
+
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'chart';
+            const canvas = document.createElement('canvas');
+            canvas.id = `chart-${username}-${sensor.SensorID}`;
+            chartDiv.appendChild(canvas);
+            container.appendChild(chartDiv);
+
+            const ctx = canvas.getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: `Sensor ${sensor.SensorID} Readings`,
+                        data: [],
+                        borderWidth: 2,
+                        borderColor: `hsl(${(sensor.SensorID * 45) % 360}, 70%, 50%)`,
+                        backgroundColor: `hsla(${(sensor.SensorID * 45) % 360}, 70%, 50%, 0.1)`,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) { return value.toLocaleString(); }
+                            }
+                        },
+                        x: {
+                            ticks: { maxRotation: 45, minRotation: 45 }
+                        }
+                    }
+                }
+            });
+
+            charts[sensor.SensorID] = chart;
         }
 
         function updateCharts(username, sensors) {
-            const charts = userCharts.get(username);
-            if (!charts) return;
+            const userData = userCharts.get(username);
+            if (!userData) return;
+
+            // Sort sensors by sensorID to ensure order
+            sensors.sort((a, b) => a.SensorID - b.SensorID);
 
             sensors.forEach(sensor => {
+                const { charts } = userData;
+                if (!charts[sensor.SensorID]) {
+                    addSensorChart(username, sensor);
+                }
                 const chart = charts[sensor.SensorID];
                 if (!chart) return;
 
@@ -158,6 +126,25 @@
                 chart.data.datasets[0].data = readings.map(r => r.Value);
                 chart.update();
             });
+
+            // Reorder the chart elements in the DOM based on sensorID
+            reorderCharts(username, sensors);
+        }
+
+        function reorderCharts(username, sensors) {
+            const { container } = userCharts.get(username);
+
+            // Create a document fragment to reorder charts
+            const fragment = document.createDocumentFragment();
+
+            sensors.sort((a, b) => a.SensorID - b.SensorID).forEach(sensor => {
+                const chartDiv = document.getElementById(`chart-${username}-${sensor.SensorID}`).parentElement;
+                fragment.appendChild(chartDiv);
+            });
+
+            // Append the reordered charts back to the container
+            container.innerHTML = ''; // Clear existing
+            container.appendChild(fragment);
         }
 
         function updateActiveUsers() {
@@ -166,6 +153,7 @@
             activeUsersElement.textContent = `Active Users: ${userCount === 0 ? 'None' : Array.from(userCharts.keys()).join(', ')}`;
         }
 
+        // Start the SignalR connection
         connection.start().catch(err => console.error(err.toString()));
     </script>
 </body>
