@@ -14,25 +14,59 @@
 
 using System.Collections.Generic;
 
-namespace TTNMqttWebApi.Services{
 
+public class UserCreation{
 
-class UserCreation{
-
-        Dictionary<int, int[]> sensorDictionary = new Dictionary<int, int[]>();
+        Dictionary<int, List<BuddySensorReading>> sensorDictionary = new Dictionary<int, List<BuddySensorReading>>();
         String userName = "No User Found!!";
-        public UserCreation(Dictionary<int, int[]> iSensorDic, String userName){
-            this.sensorDictionary = iSensorDic;
+        public UserCreation(String userName){
             this.userName = userName;
         }
 
-        public void AddSensorValue(int SensorNumber, int sensorValue){
-            int[] tempArray = this.sensorDictionary[SensorNumber];
-            tempArray[tempArray.Length] = sensorValue;
+        public void AddSensorValue(int SensorNumber, BuddySensorReading sensorValue){
+            try{
+                this.sensorDictionary[SensorNumber].Add(sensorValue);
+            }catch{
+                
+                this.sensorDictionary.Add(SensorNumber, new List<BuddySensorReading>());
+                this.sensorDictionary[SensorNumber].Add(sensorValue);
+            }
+            
         }
 
-        public int[] RetrieveUserValues(int SensorID){
+        public List<BuddySensorReading> RetrieveUserValues(int SensorID){
             return this.sensorDictionary[SensorID];
         }
+
+        public string GetSensorReadingsJson()
+        {
+            if (sensorDictionary == null || sensorDictionary.Count == 0)
+            {
+                return "No sensor readings available.";
+            }
+
+            var readingsJson = string.Join(",", sensorDictionary.Select(kvp =>
+            {
+                var sensorId = kvp.Key;
+                var readingsList = kvp.Value;
+
+                var readingsArrayJson = string.Join(",", readingsList.Select(reading =>
+                    $"{{\"Timestamp\":\"{reading.Time:O}\",\"Value\":{reading.Value}}}"
+                ));
+
+                return $"{{\"SensorID\":{sensorId},\"Readings\":[{readingsArrayJson}]}}";
+            }));
+
+        return readingsJson;
     }
-}
+        public string ToJson()
+        {
+        if (sensorDictionary == null || sensorDictionary.Count == 0)
+        {
+            return "No sensor readings available.";
+        }
+
+        return $"[{GetSensorReadingsJson()}]";
+        }
+
+    }

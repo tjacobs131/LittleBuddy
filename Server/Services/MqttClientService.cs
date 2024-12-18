@@ -33,14 +33,15 @@ namespace TTNMqttWebApi.Services
         private readonly string apiKey;
         private readonly IHubContext<BudHub> _hubContext;
 
+
         private IMqttClient? mqttClient;
         private MqttClientOptions? options;
 
-        private readonly BuddyDataStore buddyDataStore;
+        //private readonly BuddyDataStore buddyDataStore;
+        BuddyGroup previousBuddyGroup = new BuddyGroup();
 
-        public MqttClientService(IConfiguration configuration, BuddyDataStore buddyDataStore, IHubContext<BudHub> hubContext)
+        public MqttClientService(IConfiguration configuration, IHubContext<BudHub> hubContext)
         {
-            this.buddyDataStore = buddyDataStore;
             _configuration = configuration;
             _hubContext = hubContext;
 
@@ -109,16 +110,20 @@ namespace TTNMqttWebApi.Services
                 }
                 
                 // Retrieve or create BuddyReading
-                BuddyGroup previousBuddyGroup = buddyDataStore.GetLatestReading();
+              
                 string deviceID = readablePayload.end_device_ids.device_id;
-                BuddyDevice buddyDevice;
-                try {
-                    buddyDevice = previousBuddyGroup.GetBuddyDevice(deviceID);
-                } catch (KeyNotFoundException)
-                {
-                    Console.WriteLine($"### REGISTERING NEW DEVICE: {deviceID} ###");
-                    buddyDevice = new BuddyDevice();
-                }
+                //BuddyDevice buddyDevice;
+             
+
+                // try {
+                //     buddyDevice = previousBuddyGroup.GetBuddyDevice(deviceID);
+                // } catch (KeyNotFoundException)
+                // {
+                //     Console.WriteLine($"### REGISTERING NEW DEVICE: {deviceID} ###");
+                //     buddyDevice = new BuddyDevice();
+                // }
+
+                string username = "";                
                 
                 // Process the payload in 3 byte chunks
                 for (int i = 0; i < payloadBytes.Length; i += 3)
@@ -126,7 +131,7 @@ namespace TTNMqttWebApi.Services
                     int sensorID = payloadBytes[i];
                     int value = (payloadBytes[i + 1] << 8) | payloadBytes[i+2]; // The sensor's reading is represented in the last two bytes
 
-                    string username;
+                    
                     if (sensorID == 0){ // RFID sensor code, we are setting the username
                         switch(value){
                             case 0:
@@ -146,23 +151,35 @@ namespace TTNMqttWebApi.Services
                                 break;
                         }
                         Console.WriteLine($"### {deviceID} now belongs to {username} ###");
-                        buddyDevice.RegisterNewUser(username);
-                        previousBuddyGroup.AddBuddyDevice(username, buddyDevice);
+                        // buddyDevice.RegisterNewUser(username);
+                        //previousBuddyGroup.AddBuddyDevice(username, buddyDevice);
+                        previousBuddyGroup.AddUser(username);
                         continue;
                     }
-
+                    
                     // Create SensorReading
                     BuddySensorReading sensorReading = new BuddySensorReading(value, readablePayload.received_at);
+                    
+                    
+
+                   
 
                     // Add the sensorReading to BuddyReading
-                    buddyDevice.AddSensorReading(sensorID, sensorReading);
+                    //buddyDevice.AddSensorReading(sensorID, sensorReading);
+                    UserCreation user = previousBuddyGroup.GetUser(username);
 
-                    previousBuddyGroup.AddBuddyDevice(deviceID, buddyDevice);
+                    
+
+                    user.AddSensorValue(sensorID, sensorReading);
+
+                    // previousBuddyGroup.AddBuddyDevice(username, buddyDevice);
+                    
                 }
 
-                buddyDataStore.UpdateReading(previousBuddyGroup);
+                //buddyDataStore.UpdateReading(previousBuddyGroup);
 
                 // Send all readings after processing
+                
                 _ = SendSensorReadings();
 
                 return Task.CompletedTask;
@@ -222,8 +239,9 @@ namespace TTNMqttWebApi.Services
         }
 
         private async Task SendSensorReadings(){
-            string json = buddyDataStore.GetLatestReading().ToJson();
 
+            string json = previousBuddyGroup.ToJson();
+            
             Console.WriteLine("### SENDING JSON TO FRONTEND ###");
             Console.WriteLine($"+ Frontend Json = {json}");
 
