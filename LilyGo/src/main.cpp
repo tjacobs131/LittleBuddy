@@ -145,7 +145,7 @@ void loop() {
         case RUNNING:
             myBuddyrun.LittleBuddy();
 
-            myLoraSender.send(myData.loraMessage.message_total_payload, sizeof(myData.loraMessage.message_total_payload)); //:TODO: check length
+            myLoraSender.send(myData.loraMessage.message_total_payload, sizeof(myData.loraMessage.message_total_payload));
 
             mySensor.display.displayText("Short: Data",0, 20);
             mySensor.display.displayText("Long: Logout",0, 30);
