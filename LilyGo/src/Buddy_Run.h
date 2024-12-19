@@ -77,19 +77,19 @@ class BuddyRun
                     ref_mySensor.display.displayText("RUN: Get Data",0, 10);
 
                     // geluid sensor
-                    Serial.println("& Gettting Sound data");
+                    // Serial.println("& Gettting Sound data");
                     sensordata.decibels = ref_mySensor.micSensor.readMicDecibels();
                         ref_myData.saveData(sensordata.decibels,"Sound_db");
 
                     // temp sensor
-                    Serial.println("& Gettting Temp data");
+                    // Serial.println("& Gettting Temp data");
                     sensordata.humidity = ref_mySensor.dhtSensor.readHumidity();
                         ref_myData.saveData(sensordata.humidity,"Temp_humid");
                     sensordata.temperature = ref_mySensor.dhtSensor.readTemperature();
                         ref_myData.saveData(sensordata.temperature,"Temp_degrees");
 
                     // gas sensor
-                    Serial.println("& Gettting Gas data");
+                    // Serial.println("& Gettting Gas data");
                     // sensordata.ppb = ref_mySensor.GasSensor.readPPB();
                     ref_myData.saveData(sensordata.ppb,"Gas_ppb");
                     // sensordata.SO2_concentration = ref_mySensor.GasSensor.getGasConcentration("SO2");

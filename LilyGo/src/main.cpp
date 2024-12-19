@@ -149,16 +149,6 @@ void loop() {
 
             mySensor.display.displayText("Short: Data",0, 20);
             mySensor.display.displayText("Long: Logout",0, 30);
-
-            if (pressType == SHORT_PRESS) {
-                //Serial.println("Knop kort ingedrukt!");
-                myBuddyrun.buddyState = GET_DATA;
-            } 
-            if (pressType == LONG_PRESS) {
-                //Serial.println("Knop lang ingedrukt!");
-                mainState = LOGOUT;
-            }
-
             break;
 
         case ERROR:
