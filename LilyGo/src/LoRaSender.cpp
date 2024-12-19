@@ -95,7 +95,7 @@ void LoRaSender::onEvent(ev_t ev) {
                 Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission in 60 seconds
-            os_setTimedCallback(&sendjob, os_getTime() + sec2osticks(10), do_send);
+            os_setTimedCallback(&sendjob, os_getTime() + sec2osticks(60), do_send);
             break;
 
         case EV_RXCOMPLETE:

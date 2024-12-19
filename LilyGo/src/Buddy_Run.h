@@ -69,40 +69,40 @@ class BuddyRun
                     }
 
                     break;
+                    
                 case GET_DATA:
                     Serial.println("Little Buddy: GET_DATA");
-                    
+
+                    // Clear and update the display
                     ref_mySensor.display.clear();
                     ref_mySensor.DisplayBuddy();
-                    ref_mySensor.display.displayText("RUN: Get Data",0, 10);
+                    ref_mySensor.display.displayText("RUN: Get Data", 0, 10);
 
-                    // geluid sensor
-                    // Serial.println("& Gettting Sound data");
-                    sensordata.decibels = ref_mySensor.micSensor.readMicDecibels();
-                        ref_myData.saveData(sensordata.decibels,"Sound_db");
+                    // Generate random and reasonable data
+                    // Sound sensor
+                    sensordata.decibels = random(30, 120); // Random decibels in range 30-120 dB
+                    ref_myData.saveData(sensordata.decibels, "Sound_db");
 
-                    // temp sensor
-                    // Serial.println("& Gettting Temp data");
-                    sensordata.humidity = ref_mySensor.dhtSensor.readHumidity();
-                        ref_myData.saveData(sensordata.humidity,"Temp_humid");
-                    sensordata.temperature = ref_mySensor.dhtSensor.readTemperature();
-                        ref_myData.saveData(sensordata.temperature,"Temp_degrees");
+                    // Temperature and humidity sensor
+                    sensordata.humidity = random(30, 90); // Random humidity in range 30-90%
+                    ref_myData.saveData(sensordata.humidity, "Temp_humid");
+                    sensordata.temperature = random(-10, 40); // Random temperature in range -10°C to 40°C
+                    ref_myData.saveData(sensordata.temperature, "Temp_degrees");
 
-                    // gas sensor
-                    // Serial.println("& Gettting Gas data");
-                    // sensordata.ppb = ref_mySensor.GasSensor.readPPB();
-                    ref_myData.saveData(sensordata.ppb,"Gas_ppb");
-                    // sensordata.SO2_concentration = ref_mySensor.GasSensor.getGasConcentration("SO2");
-                    ref_myData.saveData(sensordata.SO2_concentration,"Gas_SO2"); 
-                    // sensordata.NO2_concentration = ref_mySensor.GasSensor.getGasConcentration("NO2"); 
-                    ref_myData.saveData(sensordata.NO2_concentration,"Gas_NO2");
-                    // sensordata.NO__concentration = ref_mySensor.GasSensor.getGasConcentration("NO"); 
-                    ref_myData.saveData(sensordata.NO__concentration,"Gas_NO");
-                    // sensordata.C6H6_concentration = ref_mySensor.GasSensor.getGasConcentration("C6H6");
-                    ref_myData.saveData(sensordata.C6H6_concentration,"Gas_C6H6");
+                    // Gas sensor (random PPB and concentrations)
+                    sensordata.ppb = random(0, 500); // Random gas level in parts per billion
+                    ref_myData.saveData(sensordata.ppb, "Gas_ppb");
+                    sensordata.SO2_concentration = random(0, 10); // Random SO2 concentration in range 0-10 ppm
+                    ref_myData.saveData(sensordata.SO2_concentration, "Gas_SO2");
+                    sensordata.NO2_concentration = random(0, 10); // Random NO2 concentration in range 0-10 ppm
+                    ref_myData.saveData(sensordata.NO2_concentration, "Gas_NO2");
+                    sensordata.NO__concentration = random(0, 10); // Random NO concentration in range 0-10 ppm
+                    ref_myData.saveData(sensordata.NO__concentration, "Gas_NO");
+                    sensordata.C6H6_concentration = random(0, 5); // Random benzene (C6H6) concentration in range 0-5 ppm
+                    ref_myData.saveData(sensordata.C6H6_concentration, "Gas_C6H6");
 
+                    // Transition to the next state
                     buddyState = UPDATE_DISPLAY;
-                    
                     break;
 
                 case UPDATE_DISPLAY:
