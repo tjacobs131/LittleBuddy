@@ -38,6 +38,73 @@
             }
         });
 
+        const sensorConfig = {
+            1: { // Humidity
+                red: { min: 0, max: 30, upperMax: 70 },
+                yellow: { min: 30, max: 40, upperMin: 60, upperMax: 70 },
+                green: { min: 40, max: 60 },
+                scale: { min: 0, max: 100 },
+                unit: '%',
+                lines: [30, 40, 60, 70]  // Add threshold lines
+            },
+            2: { // Temperature
+                red: { min: -Infinity, max: 18, upperMax: Infinity, upperMin: 30 },
+                yellow: { min: 18, max: 20, upperMin: 26, upperMax: 30 },
+                green: { min: 20, max: 26 },
+                scale: { min: 0, max: 40 },
+                unit: '°C',
+                lines: [18, 20, 26, 30]  // Add threshold lines
+            },
+            3: { // Sound
+                red: { min: 85, max: Infinity },
+                yellow: { min: 70, max: 85 },
+                green: { min: -Infinity, max: 70 },
+                scale: { min: 30, max: 100 },
+                unit: 'dB',
+                lines: [70, 85]  // Add threshold lines
+            },
+            4: { // Gas PPB
+                red: { min: 100, max: Infinity },
+                yellow: { min: 50, max: 100 },
+                green: { min: -Infinity, max: 50 },
+                scale: { min: 0, max: 150 },
+                unit: 'ppb',
+                lines: [50, 100]  // Add threshold lines
+            },
+            5: { // SO2
+                red: { min: 75, max: Infinity },
+                yellow: { min: 35, max: 75 },
+                green: { min: -Infinity, max: 35 },
+                scale: { min: 0, max: 100 },
+                unit: 'ppb',
+                lines: [35, 75]  // Add threshold lines
+            },
+            6: { // NO2
+                red: { min: 100, max: Infinity },
+                yellow: { min: 53, max: 100 },
+                green: { min: -Infinity, max: 53 },
+                scale: { min: 0, max: 150 },
+                unit: 'ppb',
+                lines: [53, 100]  // Add threshold lines
+            },
+            7: { // NO
+                red: { min: 100, max: Infinity },
+                yellow: { min: 50, max: 100 },
+                green: { min: -Infinity, max: 50 },
+                scale: { min: 0, max: 150 },
+                unit: 'ppb',
+                lines: [50, 100]  // Add threshold lines
+            },
+            8: { // C6H6
+                red: { min: 5, max: Infinity },
+                yellow: { min: 2, max: 5 },
+                green: { min: -Infinity, max: 2 },
+                scale: { min: 0, max: 10 },
+                unit: 'ppb',
+                lines: [2, 5]  // Add threshold lines
+            }
+        };
+
         function createUserContainer(username) {
             const usersContainer = document.getElementById('users-container');
             const userContainer = document.createElement('div');
@@ -60,7 +127,7 @@
             });
         }
 
-        function addSensorChart(username, sensor) {
+        function addSensorChart(username, sensor, sensorName) {
             const { container, charts } = userCharts.get(username);
 
             const chartDiv = document.createElement('div');
@@ -76,7 +143,7 @@
                 data: {
                     labels: [],
                     datasets: [{
-                        label: `Sensor ${sensor.SensorID} Readings`,
+                        label: `${sensorName} Readings`,
                         data: [],
                         borderWidth: 2,
                         borderColor: `hsl(${(sensor.SensorID * 45) % 360}, 70%, 50%)`,
@@ -110,13 +177,53 @@
             const userData = userCharts.get(username);
             if (!userData) return;
 
+            /*
+            sensor id:
+            1 = humidity
+            2 = temp
+            3 = sound
+            4 = gas ppb
+            5 = gas so2
+            6 = gas no2
+            7 = gas no
+            8 = gas c6h6
+            */
             // Sort sensors by sensorID to ensure order
             sensors.sort((a, b) => a.SensorID - b.SensorID);
+            var sensorName = "";
 
             sensors.forEach(sensor => {
+                switch(sensor.SensorID){
+                    case 1:
+                        sensorName = "Humidity";
+                        break;
+                    case 2: 
+                        sensorName = "Temp";
+                        break;
+                    case 3:
+                        sensorName = "Sound";
+                        break;
+                    case 4:
+                        sensorName = "Gas Pbb"
+                        break;
+                    case 5:
+                        sensorName = "Gas So2";
+                        break;
+                    case 6:
+                        sensorName = "Gas No2";
+                        break;
+                    case 7:
+                        sensorName = "Gas No";
+                        break;
+                    case 8:     
+                        sensorName = "Gas C6h6";
+                        break;
+                }
+
+                console.log(sensorName);
                 const { charts } = userData;
                 if (!charts[sensor.SensorID]) {
-                    addSensorChart(username, sensor);
+                    addSensorChart(username, sensor, sensorName);
                 }
                 const chart = charts[sensor.SensorID];
                 if (!chart) return;

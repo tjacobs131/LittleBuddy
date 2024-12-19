@@ -162,7 +162,7 @@ namespace TTNMqttWebApi.Services
                     }
                     
                     // Create SensorReading new sensor reading
-                    BuddySensorReading sensorReading = new BuddySensorReading(value, readablePayload.received_at);
+                    BuddySensorReading sensorReading = new BuddySensorReading(value/10, readablePayload.received_at);
 
                     // 
                     UserCreation user = previousBuddyGroup.GetUser(username);
