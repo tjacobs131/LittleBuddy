@@ -45,7 +45,6 @@ void setup() {
 
     // mySensor.buzzer.playHappyTone();
     delay(2000);
-
 }
 
 void loop() {
