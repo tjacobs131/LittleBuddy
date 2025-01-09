@@ -1,245 +1,113 @@
-#include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 #include "MAX9814.h"
 #include "DT22.h"
 #include "AGS02MA_Sensor.h"
-#include "PN532.h"
-#include "ButtonDriver.h"
-#include "Display.h"
-#include "Bitmap.h"
-#include "LoRaSender.h"
-#include "TimerDriver.h"
 
-// ** Sensor and Device Pin Definitions **
-#define SDA_PIN 21
-#define SCL_PIN 22
+// ** WiFi Configuration **
+const char* ssid = "Your_SSID";           // Replace with your WiFi SSID
+const char* password = "Your_PASSWORD";   // Replace with your WiFi password
+
+// ** TTN MQTT Configuration **
+const char* mqtt_server = "eu1.cloud.thethings.network";  // TTN MQTT server
+const int mqtt_port = 1883;                              // Port 1883 (non-TLS) or 8883 (TLS)
+const char* mqtt_user = "little-buddy@ttn";              // TTN Application username
+const char* mqtt_password = "NNSXS.F6OOQAGNMJLAXJOIXEBZH4QSLLEP6YCOUAUO2RA.H7WYA7QLCTXAHDJ4SNVLIGRCF2DIMULZ7KJFRJFBCREW6HLXXP7A";          // TTN API Key for the application
+const char* mqtt_topic_up = "v3/little-buddy@ttn/devices/device-id/up";      // Publish topic
+const char* mqtt_topic_down = "v3/little-buddy@ttn/devices/device-id/down";  // Subscribe topic
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// ** Sensor Configuration **
 #define MAX9814PIN 13
 #define DHTPIN 15
-#define BUZZERPIN 26
-#define PN532PIN_IRQ 2
-#define PN532PIN_RESET 3
-#define BUTTON_PIN 10
-#define BUTTON_TIME_LONG_PRESS 2000
-
-// LoRa Sender
-LoRaSender loraSender;
-
-// State Definitions
-enum MainState { STANDBY, LOGIN, LOGOUT, ERROR, RUNNING };
-enum BuddyState { SLEEP, GET_DATA, SEND_DATA, UPDATE_DISPLAY };
-enum BuddyDisplay { HAPPY, SAD, SOUND, TEMP, HEART, NFC };
-
-// State Variables
-MainState mainState = STANDBY;
-BuddyState buddyState = SLEEP;
-BuddyDisplay buddyDisplay = HEART;
-
-// Timer
-TimerDriver timer1;
-
-// Sensor Instances
-AGS02MA_Sensor gasSensor;
 MAX9814 micSensor(MAX9814PIN);
 c_DHT22 dhtSensor(DHTPIN);
-PN532 rfid(PN532PIN_IRQ, PN532PIN_RESET);
-ButtonDriver button(BUTTON_PIN, BUTTON_TIME_LONG_PRESS);
-OLEDDriver display;
+AGS02MA_Sensor gasSensor;
 
-// Sensor Data Structure
-struct SensorData {
-    float decibels;
-    float temperature;
-    float humidity;
-    float ppb;
-    uint8_t uidBuffer[7];
-    uint8_t uidLength;
-};
-SensorData sensorData;
-
-// ** Helper Function: Display Buddy Status **
-void displayBuddy() {
-    display.clear();
-    switch (buddyDisplay) {
-        case HAPPY:
-            display.displayImage(80, 20, bitmap_happy, width_happy, height_happy);
-            display.displayText("Buddy: HAPPY", 0, 50);
-            break;
-        case SAD:
-            display.displayImage(80, 20, bitmap_sad, width_sad, height_sad);
-            display.displayText("Buddy: SAD", 0, 50);
-            break;
-        case SOUND:
-            display.displayImage(80, 20, bitmap_sound, width_sound, height_sound);
-            display.displayText("Buddy: SOUND", 0, 50);
-            break;
-        case TEMP:
-            display.displayImage(80, 20, bitmap_temp, width_temp, height_temp);
-            display.displayText("Buddy: TEMP", 0, 50);
-            break;
-        case HEART:
-            display.displayImage(80, 20, bitmap_heart, width_heart, height_heart);
-            display.displayText("Buddy: HEART", 0, 50);
-            break;
-        case NFC:
-            display.displayImage(80, 20, bitmap_nfc, width_nfc, height_nfc);
-            break;
+void setupWiFi() {
+    Serial.print("Connecting to WiFi");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.print(".");
     }
-    display.update();
+    Serial.println("\nWiFi connected.");
 }
 
-// ** LoRa Payload Packing **
-void sendLoRaPayload() {
-    uint8_t payload[30];  // Adjust size based on sensors
-    uint8_t index = 0;
-
-    // Pack Data
-    if (sensorData.uidLength > 0) {  // RFID
-        payload[index++] = 0x00;  // SensorID for RFID
-        payload[index++] = 0x00;
-        payload[index++] = sensorData.uidBuffer[0];
-    }
-    payload[index++] = 0x01;  // Temp_Humid
-    payload[index++] = uint16_t(sensorData.humidity * 10) >> 8;
-    payload[index++] = uint16_t(sensorData.humidity * 10) & 0xFF;
-
-    payload[index++] = 0x02;  // Temp_Degrees
-    payload[index++] = uint16_t(sensorData.temperature * 10) >> 8;
-    payload[index++] = uint16_t(sensorData.temperature * 10) & 0xFF;
-
-    payload[index++] = 0x03;  // Sound_db
-    payload[index++] = uint16_t(sensorData.decibels * 10) >> 8;
-    payload[index++] = uint16_t(sensorData.decibels * 10) & 0xFF;
-
-    payload[index++] = 0x04;  // Gas_ppb
-    payload[index++] = uint16_t(sensorData.ppb * 10) >> 8;
-    payload[index++] = uint16_t(sensorData.ppb * 10) & 0xFF;
-
-    // Send the Payload
-    Serial.println("Sending LoRa payload...");
-    Serial.print("Payload: ");
-    for (int i = 0; i < index; i++) {
-        Serial.print(payload[i], HEX);
-        Serial.print(" ");
-    }
-    loraSender.send(payload, index);
-    Serial.println("LoRa payload sent.");
-}
-
-// ** Little Buddy State Machine **
-void littleBuddy() {
-    switch (buddyState) {
-        case SLEEP:
-            Serial.println("Little Buddy is sleeping...");
-            if (timer1.elapsedSeconds() > 5) {
-                buddyState = GET_DATA;
-            }
-            break;
-
-        case GET_DATA:
-            Serial.println("Getting sensor data...");
-
-            // Read microphone decibel value
-            sensorData.decibels = micSensor.readMicDecibels();
-            Serial.print("Microphone decibel value: ");
-            Serial.println(sensorData.decibels);
-
-            // Read DHT sensor temperature and humidity
-            sensorData.temperature = dhtSensor.readTemperature();
-            Serial.print("Temperature (Celsius): ");
-            Serial.println(sensorData.temperature);
-
-            sensorData.humidity = dhtSensor.readHumidity();
-            Serial.print("Humidity (%): ");
-            Serial.println(sensorData.humidity);
-
-            // Read gas sensor values
-            sensorData.ppb = gasSensor.readPPB();
-            Serial.print("Gas sensor PPB value: ");
-            Serial.println(sensorData.ppb);
-
-            buddyState = UPDATE_DISPLAY;
-            break;
-
-        case UPDATE_DISPLAY:
-            Serial.println("Updating display...");
-            if (sensorData.decibels > 60 || sensorData.temperature > 40 || sensorData.ppb > 100) {
-                buddyDisplay = SAD;
-                Serial.println("Buddy status: SAD");
-            } else {
-                buddyDisplay = HAPPY;
-                Serial.println("Buddy status: HAPPY");
-            }
-            displayBuddy();
-            buddyState = SEND_DATA;
-            break;
-
-        case SEND_DATA:
-            Serial.println("Sending data...");
-            sendLoRaPayload();
-            buddyState = SLEEP;
-            break;
+void reconnectMQTT() {
+    while (!client.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        if (client.connect("ESP32Client", mqtt_user, mqtt_password)) {
+            Serial.println("connected");
+            // Subscribe to the downlink topic
+            client.subscribe(mqtt_topic_down);
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(client.state());
+            Serial.println(" try again in 5 seconds");
+            delay(5000);
+        }
     }
 }
 
-// ** Setup Function **
+// MQTT Callback Function
+void mqttCallback(char* topic, byte* message, unsigned int length) {
+    Serial.print("Message arrived on topic: ");
+    Serial.println(topic);
+
+    Serial.print("Message: ");
+    for (int i = 0; i < length; i++) {
+        Serial.print((char)message[i]);
+    }
+    Serial.println();
+
+    // You can handle messages here if needed
+}
+
 void setup() {
     Serial.begin(115200);
-    Wire.begin(SDA_PIN, SCL_PIN);
 
-    // Initialize Sensors and Devices
-    Serial.println("Initializing DHT Sensor...");
+    // Initialize WiFi
+    setupWiFi();
+
+    // Initialize MQTT
+    client.setServer(mqtt_server, mqtt_port);
+    client.setCallback(mqttCallback);
+
+    // Initialize Sensors
+    micSensor.readMicDecibels();
     dhtSensor.begin();
-
-    Serial.println("Initializing Gas Sensor...");
-    gasSensor.begin(SDA_PIN, SCL_PIN);
-
-    Serial.println("Initializing PN532 RFID...");
-    rfid.begin(SDA_PIN, SCL_PIN);  // Initialize PN532
-
-    Serial.println("Initializing Display...");
-    display.begin();
-
-    Serial.println("Initializing LoRa Sender...");
-    loraSender.init();
-
-    // Display Setup Status
-    display.clear();
-    display.displayText("Little Buddy", 0, 10);
-    display.displayText("Setup Complete", 0, 20);
-    display.update();
-
-    delay(2000);
-    timer1.start();
+    gasSensor.begin();
 }
 
-// ** Main Loop **
 void loop() {
-    loraSender.loop();  // Continuously run LoRa tasks
-    switch (mainState) {
-        case STANDBY:
-            Serial.println("Waiting for login...");
-            if (rfid.requestTag()) {
-                rfid.readCardUID(sensorData.uidBuffer, sensorData.uidLength);
-                Serial.println("RFID tag detected!");
-                mainState = LOGIN;
-            }
-            break;
-
-        case LOGIN:
-            Serial.println("Logging in...");
-            mainState = RUNNING;
-            break;
-
-        case RUNNING:
-            littleBuddy();
-            break;
-
-        case LOGOUT:
-            Serial.println("Logging out...");
-            mainState = STANDBY;
-            break;
-
-        case ERROR:
-            Serial.println("An error occurred...");
-            break;
+    // Ensure MQTT is connected
+    if (!client.connected()) {
+        reconnectMQTT();
     }
+    client.loop();
+
+    // Read sensor data
+    float decibels = micSensor.readMicDecibels();
+    float temperature = dhtSensor.readTemperature();
+    float humidity = dhtSensor.readHumidity();
+    float gas_ppb = gasSensor.readPPB();
+
+    // Create a JSON payload
+    String payload = "{";
+    payload += "\"decibels\":" + String(decibels) + ",";
+    payload += "\"temperature\":" + String(temperature) + ",";
+    payload += "\"humidity\":" + String(humidity) + ",";
+    payload += "\"gas_ppb\":" + String(gas_ppb);
+    payload += "}";
+
+    // Publish the payload to TTN MQTT
+    Serial.print("Publishing to TTN MQTT: ");
+    Serial.println(payload);
+    client.publish(mqtt_topic_up, payload.c_str());
+
+    // Wait for 60 seconds
+    delay(60000);
 }
