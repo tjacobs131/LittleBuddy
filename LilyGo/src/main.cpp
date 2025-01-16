@@ -5,16 +5,16 @@
 #include "AGS02MA_Sensor.h"
 
 // ** WiFi Configuration **
-const char* ssid = "Your_SSID";           // Replace with your WiFi SSID
-const char* password = "Your_PASSWORD";   // Replace with your WiFi password
+const char* ssid = "GNX87671B";           // Replace with your WiFi SSID
+const char* password = "UHAD2UL3JQW4";   // Replace with your WiFi password
 
 // ** TTN MQTT Configuration **
 const char* mqtt_server = "eu1.cloud.thethings.network";  // TTN MQTT server
 const int mqtt_port = 1883;                              // Port 1883 (non-TLS) or 8883 (TLS)
 const char* mqtt_user = "little-buddy@ttn";              // TTN Application username
 const char* mqtt_password = "NNSXS.F6OOQAGNMJLAXJOIXEBZH4QSLLEP6YCOUAUO2RA.H7WYA7QLCTXAHDJ4SNVLIGRCF2DIMULZ7KJFRJFBCREW6HLXXP7A";          // TTN API Key for the application
-const char* mqtt_topic_up = "v3/little-buddy@ttn/devices/device-id/up";      // Publish topic
-const char* mqtt_topic_down = "v3/little-buddy@ttn/devices/device-id/down";  // Subscribe topic
+const char* mqtt_topic_up = "v3/little-buddy@ttn/devices/littlebuddy-device-2/up";      // Publish topic
+const char* mqtt_topic_down = "v3/little-buddy@ttn/devices/littlebuddy-device-2/down";  // Subscribe topic
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -22,6 +22,9 @@ PubSubClient client(espClient);
 // ** Sensor Configuration **
 #define MAX9814PIN 13
 #define DHTPIN 15
+#define SDA_PIN 21
+#define SCL_PIN 22
+
 MAX9814 micSensor(MAX9814PIN);
 c_DHT22 dhtSensor(DHTPIN);
 AGS02MA_Sensor gasSensor;
@@ -62,8 +65,6 @@ void mqttCallback(char* topic, byte* message, unsigned int length) {
         Serial.print((char)message[i]);
     }
     Serial.println();
-
-    // You can handle messages here if needed
 }
 
 void setup() {
@@ -79,7 +80,7 @@ void setup() {
     // Initialize Sensors
     micSensor.readMicDecibels();
     dhtSensor.begin();
-    gasSensor.begin();
+    gasSensor.begin(SDA_PIN, SCL_PIN);  // Pass SDA and SCL pins for initialization
 }
 
 void loop() {
