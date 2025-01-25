@@ -44,7 +44,7 @@
 //#include <User_Setups/Setup15_HX8357D.h>           // Setup file for ESP8266 configured for HX8357D
 //#include <User_Setups/Setup16_ILI9488_Parallel.h>  // Setup file for the ESP32 with parallel bus TFT
 //#include <User_Setups/Setup17_ePaper.h>            // Setup file for ESP8266 and any Waveshare ePaper display
-//#include <User_Setups/Setup18_ST7789.h>            // Setup file for ESP8266 configured for ST7789
+#include <User_Setups/Setup18_ST7789.h>            // Setup file for ESP8266 configured for ST7789
 
 //#include <User_Setups/Setup19_RM68140_Parallel.h>  // Setup file configured for RM68140 with parallel bus
 
