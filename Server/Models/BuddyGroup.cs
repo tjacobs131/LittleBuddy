@@ -1,39 +1,55 @@
+using TTNMqttWebApi.Services;
+
+
 public class BuddyGroup
 {
-    public Dictionary<string, BuddyDevice> BuddyDevices { get; set; }
+    public Dictionary<string, UserCreation> Users = new Dictionary<string, UserCreation>();
 
-    public BuddyGroup()
+    // public BuddyGroup()
+    // {
+       
+    // }
+
+    // public BuddyDevice GetBuddyDevice(string deviceId)
+    // {
+    //     return BuddyDevices.ContainsKey(deviceId) ? BuddyDevices[deviceId] : throw new KeyNotFoundException();
+    // }
+
+    // public void AddBuddyDevice(string userName, BuddyDevice device)
+    // {
+    //     BuddyDevices[userName] = device;
+    // }
+    
+    public void AddUser(string UserName)
     {
-        BuddyDevices = new Dictionary<string, BuddyDevice>();
+        if (!Users.ContainsKey(UserName))
+        {
+            Users.Add(UserName, new UserCreation(UserName));
+        }
     }
 
-    public BuddyDevice GetBuddyDevice(string deviceId)
-    {
-        return BuddyDevices.ContainsKey(deviceId) ? BuddyDevices[deviceId] : throw new KeyNotFoundException();
-    }
-
-    public void AddBuddyDevice(string deviceId, BuddyDevice device)
-    {
-        BuddyDevices[deviceId] = device;
+    public UserCreation GetUser(string UserName){
+        return Users[UserName];
     }
 
     public string ToJson()
     {
-        if (BuddyDevices == null || BuddyDevices.Count == 0)
+        if (Users == null || Users.Count == 0)
         {
             return "No devices connected.";
         }
 
-        var devicesJson = string.Join(",", BuddyDevices.Select(kvp =>
+        var usersJson = string.Join(",", Users.Select(kvp =>
         {
-            var deviceId = kvp.Key;
-            var buddyDevice = kvp.Value;
-            var buddyName = kvp.Value.DeviceName;
-            var readingsJson = buddyDevice.ToJson();
+            var userName = kvp.Key;
+            var user = kvp.Value;
 
-            return $"{{\"DeviceID\":\"{deviceId}\",\"Username\":\"{buddyName}\",\"BuddyDevice\":{readingsJson}}}";
+            // Call the user's ToJson
+            var userJson = user.ToJson();
+
+            return $"{{\"Username\":\"{userName}\",\"Sensors\":{userJson}}}";
         }));
 
-        return $"[{devicesJson}]";
+        return $"[{usersJson}]";
     }
 }

@@ -8,4 +8,5 @@ public class BuddySensorReading
         Value = value;
         Time = time;
     }
+    
 }
